@@ -1,9 +1,20 @@
 {
-  "name": "pitchpicture",
+  "name": "pitch-picture",
   "private": true,
   "scripts": {
-    "dev": "pnpm --dir react dev",
-    "build": "pnpm --dir react build",
-    "preview": "pnpm --dir react preview"
+    "dev": "pnpm --parallel --filter ./react --filter ./api dev",
+    "dev:web": "pnpm --filter ./react dev",
+    "dev:api": "pnpm --filter ./api dev",
+    "build": "pnpm --filter ./react build && pnpm --filter ./api build",
+    "test:analysis": "tsx scripts/test-analysis.ts"
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.0.0",
+    "jsdom": "^25.0.0",
+    "mermaid": "^11.4.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
   }
 }
