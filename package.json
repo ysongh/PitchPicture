@@ -1,0 +1,9 @@
+{
+  "name": "pitchpicture",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --dir react dev",
+    "build": "pnpm --dir react build",
+    "preview": "pnpm --dir react preview"
+  }
+}
