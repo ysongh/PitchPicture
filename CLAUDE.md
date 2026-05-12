@@ -37,7 +37,7 @@ PitchPicture/
 │       ├── app.ts        # Express setup + CORS
 │       └── index.ts      # port listen
 ├── supabase/migrations/  # schema + RLS
-├── scripts/              # dev/test utilities (test-analysis.ts, transcripts/)
+├── scripts/              # dev/test utilities (test-analysis.ts, test-pipeline.ts, transcripts/)
 └── pnpm-workspace.yaml
 ```
 
@@ -74,8 +74,8 @@ Any throw inside `processSession` marks the session `failed` with the error mess
 
 ## Implementation order (strict — gate each step)
 
-1. **Validate Claude on hardcoded transcripts.** `scripts/test-analysis.ts` only. Do not build audio, UI, DB, or Express until first-try Mermaid validity ≥90% and diagram-type picks feel right across 5–10 real transcripts.
-2. Add Deepgram, extend script to take audio.
+1. ✅ **Validate Claude on hardcoded transcripts.** `scripts/test-analysis.ts`. Gate: ≥90% first-try Mermaid validity, diagram-type picks feel right.
+2. ✅ **Add Deepgram.** `scripts/test-pipeline.ts` — audio file → transcript → Claude.
 3. Express API + Supabase (DB, storage, JWT).
 4. Frontend: auth, recorder, processing page, result page.
 5. Share view + history + delete.
@@ -90,9 +90,12 @@ pnpm dev:web           # frontend only
 pnpm dev:api           # backend only
 pnpm build             # both
 pnpm test:analysis scripts/transcripts/<file>.txt
+pnpm test:pipeline <path-to-audio>.{webm,mp3,m4a,wav,ogg,flac}
 ```
 
-`tsx` does not auto-load `api/.env` when running from repo root — export vars inline or source the file before running scripts.
+`tsx` does not auto-load `api/.env` when running from repo root — export vars inline or `export $(grep -v '^#' api/.env | xargs)` before running scripts.
+
+Root `package.json` must have `"type": "module"` — `mermaid.ts` uses top-level `await import('mermaid')` which fails under CJS.
 
 ## Env vars
 
