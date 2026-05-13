@@ -72,11 +72,19 @@ Any throw inside `processSession` marks the session `failed` with the error mess
 
 `flowchart` | `mindmap` | `architecture` | `decision_tree` | `sequence`. Selection heuristics live in the Claude system prompt in [api/src/services/claude.ts](api/src/services/claude.ts).
 
+## Storage layout
+
+Audio files live in the private `audio-recordings` bucket at `<user_id>/<session_id>.<ext>`. The first path segment is the auth user id — storage RLS policies use `storage.foldername(name)[1] = auth.uid()::text` to scope access per user. Don't change the path shape without updating the policies in [supabase/migrations/20260512_init.sql](supabase/migrations/20260512_init.sql).
+
+## Auth model
+
+Backend uses the Supabase **service-role** key, which bypasses RLS. The route handlers MUST filter every query by `req.user.id` themselves — the RLS policies in the migration are belt-and-braces for direct client access, not the backend's primary defense. `requireAuth` in [api/src/middleware/auth.ts](api/src/middleware/auth.ts) verifies the JWT via `supabase.auth.getUser(token)` and attaches `req.user`.
+
 ## Implementation order (strict — gate each step)
 
 1. ✅ **Validate Claude on hardcoded transcripts.** `scripts/test-analysis.ts`. Gate: ≥90% first-try Mermaid validity, diagram-type picks feel right.
 2. ✅ **Add Deepgram.** `scripts/test-pipeline.ts` — audio file → transcript → Claude.
-3. Express API + Supabase (DB, storage, JWT).
+3. ✅ **Express API + Supabase.** 6 endpoints, multer audio upload, service-role DB + storage client, JWT middleware. Test with curl against an email/password user created via the Supabase dashboard.
 4. Frontend: auth, recorder, processing page, result page.
 5. Share view + history + delete.
 
@@ -110,6 +118,8 @@ Root `package.json` must have `"type": "module"` — `mermaid.ts` uses top-level
 - **MediaRecorder**: use `audio/webm;codecs=opus` at 64kbps. Auto-stop at 30 min, warn at 25 min.
 - **Background work**: don't `await processSession(id)` in the route handler — return the response first, let it run, catch internally.
 - **`react/pnpm-lock.yaml`** is leftover from before workspaces; delete once Step 4 starts and root install owns the lockfile.
+- **Service-role key bypasses RLS.** Never put `SUPABASE_SERVICE_ROLE_KEY` in `react/.env` or send it to the browser. Frontend uses the `anon` key.
+- **Multer upload field name is `audio`.** `curl -F "audio=@file.m4a;type=audio/mp4"`. Send the correct MIME type or storage will store the wrong content-type and Deepgram may reject it.
 
 ## Acceptance for v1 ship
 
