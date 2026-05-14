@@ -45,4 +45,18 @@ export const api = {
   },
 
   getSession: (id: string) => request<Session>(`/api/sessions/${id}`),
+
+  getShared: (token: string) =>
+    request<Pick<
+      Session,
+      | 'id'
+      | 'status'
+      | 'title'
+      | 'diagram_type'
+      | 'diagram_reasoning'
+      | 'mermaid_code'
+      | 'summary'
+      | 'key_concepts'
+      | 'created_at'
+    >>(`/api/share/${token}`, {}, false),
 };

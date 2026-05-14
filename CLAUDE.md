@@ -89,7 +89,10 @@ Backend uses the Supabase **service-role** key, which bypasses RLS. The route ha
    - ✅ **4a.** Auth shell: `AuthProvider` + `useAuth`, Supabase anon client, fetch wrapper that auto-attaches the JWT, Home page with email/password sign-in.
    - ✅ **4b.** `Recorder` component (MediaRecorder webm/opus @ 64kbps, 25-min warn, 30-min auto-stop) + `Recording` page that uploads to `POST /api/sessions/:id/audio`.
    - ✅ **4c.** `Processing` page polls `GET /api/sessions/:id` every 2s and auto-navigates to `/result/:id` on `ready` (retry button on `failed`). `Result` page renders Mermaid client-side via `DiagramView` and includes a "Copy share link" button.
-5. Share view + history + delete.
+5. Share view + history + delete, split into three slices:
+   - ✅ **5a.** Public `Share` page at `/s/:token` calls `GET /api/share/:token` with `withAuth: false`. Reuses `DiagramView`. Friendly "Not found" for bad tokens or unready sessions.
+   - **5b.** `History` page at `/history` listing the user's sessions.
+   - **5c.** Delete wired into Result and History (`DELETE /api/sessions/:id`).
 
 Build each step end-to-end before the next.
 

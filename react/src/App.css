@@ -192,6 +192,20 @@ button:disabled {
   padding-left: 1.2rem;
   color: var(--text-h);
 }
+
+.share-footer {
+  margin-top: 2rem;
+  text-align: center;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.share-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+.share-link:hover {
+  text-decoration: underline;
+}
 @media (prefers-color-scheme: dark) {
   .error {
     color: #f87171;

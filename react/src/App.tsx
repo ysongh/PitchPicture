@@ -4,6 +4,7 @@ import { Home } from './pages/Home';
 import { Recording } from './pages/Recording';
 import { Processing } from './pages/Processing';
 import { Result } from './pages/Result';
+import { Share } from './pages/Share';
 import type { ReactNode } from 'react';
 import './App.css';
 
@@ -50,6 +51,7 @@ export default function App() {
               </RequireAuth>
             }
           />
+          <Route path="/s/:token" element={<Share />} />
           <Route
             path="*"
             element={
