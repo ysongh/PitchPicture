@@ -104,6 +104,40 @@ button:disabled {
   margin: 0;
   font-size: 0.9rem;
 }
+.warn {
+  color: #b45309;
+  margin: 0;
+  font-size: 0.9rem;
+}
+@media (prefers-color-scheme: dark) {
+  .warn {
+    color: #fbbf24;
+  }
+}
+
+.recorder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.timer {
+  font: 600 3rem/1 var(--mono);
+  color: var(--text-h);
+  font-variant-numeric: tabular-nums;
+}
+.timer.live::before {
+  content: '● ';
+  color: #dc2626;
+  animation: blink 1.2s infinite;
+}
+@keyframes blink {
+  50% { opacity: 0.3; }
+}
+.big {
+  padding: 0.85rem 1.6rem;
+  font-size: 1.05rem;
+}
 @media (prefers-color-scheme: dark) {
   .error {
     color: #f87171;

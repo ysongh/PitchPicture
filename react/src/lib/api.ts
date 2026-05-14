@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import type { Session } from './types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
@@ -26,7 +27,22 @@ async function request<T>(
 }
 
 export const api = {
-  // 4a only uses the unauthenticated health probe + auth-guarded raw client.
-  // Session methods land in 4b/4c.
   health: () => request<{ ok: boolean }>('/health', {}, false),
+
+  createSession: () =>
+    request<{ id: string; status: 'uploading' }>('/api/sessions', {
+      method: 'POST',
+    }),
+
+  uploadAudio: async (id: string, blob: Blob) => {
+    const form = new FormData();
+    const ext = blob.type.includes('webm') ? 'webm' : 'bin';
+    form.append('audio', blob, `recording.${ext}`);
+    return request<{ id: string; status: 'transcribing' }>(
+      `/api/sessions/${id}/audio`,
+      { method: 'POST', body: form }
+    );
+  },
+
+  getSession: (id: string) => request<Session>(`/api/sessions/${id}`),
 };

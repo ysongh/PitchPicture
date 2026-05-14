@@ -87,7 +87,7 @@ Backend uses the Supabase **service-role** key, which bypasses RLS. The route ha
 3. ✅ **Express API + Supabase.** 6 endpoints, multer audio upload, service-role DB + storage client, JWT middleware. Test with curl against an email/password user created via the Supabase dashboard.
 4. Frontend, split into three slices:
    - ✅ **4a.** Auth shell: `AuthProvider` + `useAuth`, Supabase anon client, fetch wrapper that auto-attaches the JWT, Home page with email/password sign-in.
-   - **4b.** Recorder component + upload to `POST /api/sessions/:id/audio`.
+   - ✅ **4b.** `Recorder` component (MediaRecorder webm/opus @ 64kbps, 25-min warn, 30-min auto-stop) + `Recording` page that uploads to `POST /api/sessions/:id/audio`. `Processing` page is a stub (manual refresh) until 4c.
    - **4c.** Processing-page polling + Result page with `mermaid.render` client-side.
 5. Share view + history + delete.
 
