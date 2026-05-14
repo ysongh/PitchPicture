@@ -14,7 +14,7 @@ Out of scope: multi-speaker, real-time, diagram editing, team workspaces, integr
 
 ## Stack
 
-- **Frontend** (`react/`): React + TS + Vite + Tailwind, React Router with `HashRouter`. Deploys to Netlify.
+- **Frontend** (`react/`): React + TS + Vite, React Router with `HashRouter`. Plain CSS (no Tailwind — spec listed it but it wasn't installed; styles use CSS vars in `react/src/index.css`). Deploys to Netlify.
 - **Backend** (`api/`): Node + Express + TS. Deploys to Railway or Fly.
 - **Auth + DB + Storage**: Supabase (Google OAuth, Postgres, private `audio-recordings` bucket)
 - **STT**: Deepgram Nova-3
@@ -85,7 +85,10 @@ Backend uses the Supabase **service-role** key, which bypasses RLS. The route ha
 1. ✅ **Validate Claude on hardcoded transcripts.** `scripts/test-analysis.ts`. Gate: ≥90% first-try Mermaid validity, diagram-type picks feel right.
 2. ✅ **Add Deepgram.** `scripts/test-pipeline.ts` — audio file → transcript → Claude.
 3. ✅ **Express API + Supabase.** 6 endpoints, multer audio upload, service-role DB + storage client, JWT middleware. Test with curl against an email/password user created via the Supabase dashboard.
-4. Frontend: auth, recorder, processing page, result page.
+4. Frontend, split into three slices:
+   - ✅ **4a.** Auth shell: `AuthProvider` + `useAuth`, Supabase anon client, fetch wrapper that auto-attaches the JWT, Home page with email/password sign-in.
+   - **4b.** Recorder component + upload to `POST /api/sessions/:id/audio`.
+   - **4c.** Processing-page polling + Result page with `mermaid.render` client-side.
 5. Share view + history + delete.
 
 Build each step end-to-end before the next.
@@ -119,6 +122,7 @@ Root `package.json` must have `"type": "module"` — `mermaid.ts` uses top-level
 - **Background work**: don't `await processSession(id)` in the route handler — return the response first, let it run, catch internally.
 - **`react/pnpm-lock.yaml`** is leftover from before workspaces; delete once Step 4 starts and root install owns the lockfile.
 - **Service-role key bypasses RLS.** Never put `SUPABASE_SERVICE_ROLE_KEY` in `react/.env` or send it to the browser. Frontend uses the `anon` key.
+- **Frontend auth model**: `AuthProvider` in [react/src/lib/auth.tsx](react/src/lib/auth.tsx) wraps `supabase.auth.onAuthStateChange`. The fetch wrapper in [react/src/lib/api.ts](react/src/lib/api.ts) pulls the current session's `access_token` per request — don't cache it; Supabase auto-refreshes on expiry.
 - **Multer upload field name is `audio`.** `curl -F "audio=@file.m4a;type=audio/mp4"`. Send the correct MIME type or storage will store the wrong content-type and Deepgram may reject it.
 
 ## Acceptance for v1 ship
