@@ -46,6 +46,16 @@ export const api = {
 
   getSession: (id: string) => request<Session>(`/api/sessions/${id}`),
 
+  list: () =>
+    request<
+      Array<
+        Pick<
+          Session,
+          'id' | 'status' | 'title' | 'diagram_type' | 'created_at' | 'updated_at'
+        >
+      >
+    >('/api/sessions'),
+
   getShared: (token: string) =>
     request<Pick<
       Session,

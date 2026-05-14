@@ -5,6 +5,7 @@ import { Recording } from './pages/Recording';
 import { Processing } from './pages/Processing';
 import { Result } from './pages/Result';
 import { Share } from './pages/Share';
+import { History } from './pages/History';
 import type { ReactNode } from 'react';
 import './App.css';
 
@@ -48,6 +49,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <Result />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <RequireAuth>
+                <History />
               </RequireAuth>
             }
           />
