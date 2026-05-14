@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './lib/auth';
 import { Home } from './pages/Home';
 import { Recording } from './pages/Recording';
 import { Processing } from './pages/Processing';
+import { Result } from './pages/Result';
 import type { ReactNode } from 'react';
 import './App.css';
 
@@ -38,6 +39,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <Processing />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/result/:id"
+            element={
+              <RequireAuth>
+                <Result />
               </RequireAuth>
             }
           />

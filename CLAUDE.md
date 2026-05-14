@@ -85,10 +85,10 @@ Backend uses the Supabase **service-role** key, which bypasses RLS. The route ha
 1. ✅ **Validate Claude on hardcoded transcripts.** `scripts/test-analysis.ts`. Gate: ≥90% first-try Mermaid validity, diagram-type picks feel right.
 2. ✅ **Add Deepgram.** `scripts/test-pipeline.ts` — audio file → transcript → Claude.
 3. ✅ **Express API + Supabase.** 6 endpoints, multer audio upload, service-role DB + storage client, JWT middleware. Test with curl against an email/password user created via the Supabase dashboard.
-4. Frontend, split into three slices:
+4. ✅ Frontend, split into three slices:
    - ✅ **4a.** Auth shell: `AuthProvider` + `useAuth`, Supabase anon client, fetch wrapper that auto-attaches the JWT, Home page with email/password sign-in.
-   - ✅ **4b.** `Recorder` component (MediaRecorder webm/opus @ 64kbps, 25-min warn, 30-min auto-stop) + `Recording` page that uploads to `POST /api/sessions/:id/audio`. `Processing` page is a stub (manual refresh) until 4c.
-   - **4c.** Processing-page polling + Result page with `mermaid.render` client-side.
+   - ✅ **4b.** `Recorder` component (MediaRecorder webm/opus @ 64kbps, 25-min warn, 30-min auto-stop) + `Recording` page that uploads to `POST /api/sessions/:id/audio`.
+   - ✅ **4c.** `Processing` page polls `GET /api/sessions/:id` every 2s and auto-navigates to `/result/:id` on `ready` (retry button on `failed`). `Result` page renders Mermaid client-side via `DiagramView` and includes a "Copy share link" button.
 5. Share view + history + delete.
 
 Build each step end-to-end before the next.
@@ -123,6 +123,7 @@ Root `package.json` must have `"type": "module"` — `mermaid.ts` uses top-level
 - **`react/pnpm-lock.yaml`** is leftover from before workspaces; delete once Step 4 starts and root install owns the lockfile.
 - **Service-role key bypasses RLS.** Never put `SUPABASE_SERVICE_ROLE_KEY` in `react/.env` or send it to the browser. Frontend uses the `anon` key.
 - **Frontend auth model**: `AuthProvider` in [react/src/lib/auth.tsx](react/src/lib/auth.tsx) wraps `supabase.auth.onAuthStateChange`. The fetch wrapper in [react/src/lib/api.ts](react/src/lib/api.ts) pulls the current session's `access_token` per request — don't cache it; Supabase auto-refreshes on expiry.
+- **Mermaid client render**: [react/src/components/DiagramView.tsx](react/src/components/DiagramView.tsx) initializes mermaid once (`securityLevel: 'strict'`) and renders into a ref'd `<div>` via `dangerouslySetInnerHTML`. Unique render IDs come from a module-level counter so React 19 strict-mode double-mounts don't collide. If render throws, the code is shown as a fallback.
 - **Multer upload field name is `audio`.** `curl -F "audio=@file.m4a;type=audio/mp4"`. Send the correct MIME type or storage will store the wrong content-type and Deepgram may reject it.
 
 ## Acceptance for v1 ship
