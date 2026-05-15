@@ -20,7 +20,7 @@ Out of scope: multi-speaker, real-time, diagram editing, team workspaces, integr
 - **STT**: Deepgram Nova-3
 - **LLM**: Anthropic `claude-sonnet-4-5`
 - **Diagram render**: `mermaid` npm, client-side. Server validates with `mermaid.parse` + JSDOM.
-- **Workspaces**: pnpm
+- **Layout**: two independent packages (`react/`, `api/`), each with its own `node_modules` and lockfile. Root `package.json` orchestrates via `pnpm -C <dir>` and holds deps for the `scripts/` test utilities.
 
 ## Repo layout
 
@@ -37,8 +37,7 @@ PitchPicture/
 │       ├── app.ts        # Express setup + CORS
 │       └── index.ts      # port listen
 ├── supabase/migrations/  # schema + RLS
-├── scripts/              # dev/test utilities (test-analysis.ts, test-pipeline.ts, transcripts/)
-└── pnpm-workspace.yaml
+└── scripts/              # dev/test utilities (test-analysis.ts, test-pipeline.ts, transcripts/)
 ```
 
 ## Shared types convention
@@ -99,10 +98,16 @@ Build each step end-to-end before the next.
 ## Commands
 
 ```bash
-pnpm dev               # parallel: Vite (5173) + Express (3001)
-pnpm dev:web           # frontend only
-pnpm dev:api           # backend only
-pnpm build             # both
+# First-time setup (after a fresh clone):
+pnpm install           # root devDeps (tsx, mermaid for test scripts, etc.)
+pnpm -C react install  # frontend deps
+pnpm -C api install    # backend deps
+
+# Dev (two terminals):
+pnpm dev:web           # frontend (Vite on 5173)
+pnpm dev:api           # backend (Express on 3001)
+
+pnpm build             # build both
 pnpm test:analysis scripts/transcripts/<file>.txt
 pnpm test:pipeline <path-to-audio>.{webm,mp3,m4a,wav,ogg,flac}
 ```

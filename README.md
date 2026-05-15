@@ -18,7 +18,7 @@ When one person describes an idea verbally to a team, others often have trouble 
 | Speech-to-text | Deepgram Nova-3 |
 | LLM | Anthropic `claude-sonnet-4-5` |
 | Diagram render | `mermaid` (client-side) |
-| Workspaces | pnpm |
+| Package manager | pnpm (each package has its own lockfile) |
 
 ## Repo layout
 
@@ -48,8 +48,12 @@ You'll need accounts for **Supabase**, **Anthropic**, and **Deepgram**. All thre
 
 ### 1. Install
 
+Each of root, `react/`, and `api/` has its own `package.json`:
+
 ```bash
-pnpm install
+pnpm install            # root devDeps (used by scripts/)
+pnpm -C react install   # frontend deps
+pnpm -C api install     # backend deps
 ```
 
 ### 2. Set up Supabase
@@ -81,18 +85,20 @@ cp react/.env.example react/.env
 
 ### 4. Run
 
+In two terminals:
+
 ```bash
-pnpm dev
+pnpm dev:web   # terminal 1 — Vite on localhost:5173
+pnpm dev:api   # terminal 2 — Express on localhost:3001
 ```
 
-Starts Vite on `localhost:5173` and Express on `localhost:3001` in parallel. Open the browser, sign in with your test user, hit "Start recording".
+Open the browser, sign in with your test user, hit "Start recording".
 
 ## Commands
 
 ```bash
-pnpm dev               # Vite (5173) + Express (3001) in parallel
-pnpm dev:web           # frontend only
-pnpm dev:api           # backend only
+pnpm dev:web           # frontend only (Vite on 5173)
+pnpm dev:api           # backend only (Express on 3001)
 pnpm build             # build both
 pnpm test:analysis scripts/transcripts/<file>.txt    # transcript → Claude
 pnpm test:pipeline <path-to-audio>.{webm,mp3,m4a,wav,ogg,flac}  # audio → Claude
