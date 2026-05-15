@@ -46,6 +46,9 @@ export const api = {
 
   getSession: (id: string) => request<Session>(`/api/sessions/${id}`),
 
+  del: (id: string) =>
+    request<{ ok: true }>(`/api/sessions/${id}`, { method: 'DELETE' }),
+
   list: () =>
     request<
       Array<

@@ -29,6 +29,7 @@ function rowHref(r: Row): string {
 export function History() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -36,6 +37,19 @@ export function History() {
       .then(setRows)
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
+
+  async function handleDelete(id: string) {
+    if (!window.confirm('Delete this pitch? This cannot be undone.')) return;
+    setDeletingId(id);
+    try {
+      await api.del(id);
+      setRows((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   if (error) {
     return (
@@ -60,7 +74,11 @@ export function History() {
     <main className="page wide">
       <div className="hero">
         <h1>Your pitches</h1>
-        <p className="tagline">{rows.length === 0 ? 'Nothing yet.' : `${rows.length} session${rows.length === 1 ? '' : 's'}`}</p>
+        <p className="tagline">
+          {rows.length === 0
+            ? 'Nothing yet.'
+            : `${rows.length} session${rows.length === 1 ? '' : 's'}`}
+        </p>
       </div>
 
       {rows.length === 0 ? (
@@ -75,7 +93,7 @@ export function History() {
       ) : (
         <ul className="session-list">
           {rows.map((r) => (
-            <li key={r.id}>
+            <li key={r.id} className="session-row">
               <Link to={rowHref(r)} className="session-card">
                 <div className="session-main">
                   <div className="session-title">{r.title || 'Untitled pitch'}</div>
@@ -87,6 +105,16 @@ export function History() {
                 </div>
                 <span className={statusClass(r.status)}>{r.status}</span>
               </Link>
+              <button
+                type="button"
+                className="session-delete"
+                aria-label="Delete pitch"
+                onClick={() => handleDelete(r.id)}
+                disabled={deletingId === r.id}
+                title="Delete"
+              >
+                {deletingId === r.id ? '…' : '×'}
+              </button>
             </li>
           ))}
         </ul>

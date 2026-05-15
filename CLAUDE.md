@@ -92,7 +92,7 @@ Backend uses the Supabase **service-role** key, which bypasses RLS. The route ha
 5. Share view + history + delete, split into three slices:
    - ✅ **5a.** Public `Share` page at `/s/:token` calls `GET /api/share/:token` with `withAuth: false`. Reuses `DiagramView`. Friendly "Not found" for bad tokens or unready sessions.
    - ✅ **5b.** `History` page at `/history` listing the user's sessions.
-   - **5c.** Delete wired into Result and History (`DELETE /api/sessions/:id`).
+   - ✅ **5c.** Delete wired into Result and History (`DELETE /api/sessions/:id`).
 
 Build each step end-to-end before the next.
 

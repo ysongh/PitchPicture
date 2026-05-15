@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { DiagramView } from '../components/DiagramView';
 import type { Session } from '../lib/types';
 
 export function Result() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -24,6 +26,19 @@ export function Result() {
     await navigator.clipboard.writeText(url);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  async function handleDelete() {
+    if (!session) return;
+    if (!window.confirm('Delete this pitch? This cannot be undone.')) return;
+    setDeleting(true);
+    try {
+      await api.del(session.id);
+      navigate('/history', { replace: true });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setDeleting(false);
+    }
   }
 
   if (error) {
@@ -92,9 +107,17 @@ export function Result() {
         <Link to="/record" className="button">
           New recording
         </Link>
-        <Link to="/" className="button ghost">
-          Home
+        <Link to="/history" className="button ghost">
+          History
         </Link>
+        <button
+          type="button"
+          className="danger"
+          onClick={handleDelete}
+          disabled={deleting}
+        >
+          {deleting ? 'Deleting…' : 'Delete'}
+        </button>
       </div>
     </main>
   );

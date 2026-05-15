@@ -93,6 +93,24 @@ button:disabled {
   background: transparent;
 }
 
+.danger {
+  background: transparent;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+.danger:hover {
+  background: rgba(220, 38, 38, 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  .danger {
+    border-color: #f87171;
+    color: #f87171;
+  }
+  .danger:hover {
+    background: rgba(248, 113, 113, 0.12);
+  }
+}
+
 .row {
   display: flex;
   gap: 0.6rem;
@@ -201,7 +219,13 @@ button:disabled {
   flex-direction: column;
   gap: 0.6rem;
 }
+.session-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
 .session-card {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -213,10 +237,25 @@ button:disabled {
   color: var(--text-h);
   text-decoration: none;
   transition: border-color 0.15s, background 0.15s;
+  min-width: 0;
 }
 .session-card:hover {
   border-color: var(--accent-border);
   background: var(--accent-bg);
+}
+.session-delete {
+  flex: 0 0 auto;
+  width: 44px;
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 0;
+  color: var(--text);
+  border-color: var(--border);
+}
+.session-delete:hover {
+  color: #dc2626;
+  border-color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
 }
 .session-main {
   display: flex;
