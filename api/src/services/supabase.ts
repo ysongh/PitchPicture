@@ -1,8 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-let _client: ReturnType<typeof createClient> | null = null;
+// Loosely typed client: table rows are `any` rather than `never`.
+// Proper generated types from `supabase gen types` would be cleaner — deferred post-hackathon.
+type Client = SupabaseClient<any, 'public', any>;
 
-export function supabase() {
+let _client: Client | null = null;
+
+export function supabase(): Client {
   if (_client) return _client;
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;

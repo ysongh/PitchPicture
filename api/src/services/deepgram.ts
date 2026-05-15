@@ -10,7 +10,7 @@ export async function transcribeWithDeepgram(
         Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`,
         'Content-Type': contentType,
       },
-      body: audio,
+      body: new Uint8Array(audio),
     }
   );
 
