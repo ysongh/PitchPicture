@@ -1,17 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
-
-let initialized = false;
-function initOnce() {
-  if (initialized) return;
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: 'strict',
-    theme: 'default',
-    fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
-  });
-  initialized = true;
-}
+import { useTheme } from '../lib/theme';
 
 let renderCounter = 0;
 
@@ -22,9 +11,16 @@ interface Props {
 export function DiagramView({ code }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const { resolved } = useTheme();
 
   useEffect(() => {
-    initOnce();
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: resolved === 'dark' ? 'dark' : 'default',
+      fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
+    });
+
     let cancelled = false;
     const id = `mmd-${++renderCounter}`;
 
@@ -45,7 +41,7 @@ export function DiagramView({ code }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [code]);
+  }, [code, resolved]);
 
   if (error) {
     return (

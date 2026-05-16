@@ -1,6 +1,32 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { useTheme, type ThemePreference } from '../lib/theme';
+
+function ThemeToggle() {
+  const { preference, setPreference } = useTheme();
+  const opts: Array<{ key: ThemePreference; label: string }> = [
+    { key: 'system', label: 'System' },
+    { key: 'light', label: 'Light' },
+    { key: 'dark', label: 'Dark' },
+  ];
+  return (
+    <div className="theme-toggle" role="radiogroup" aria-label="Theme">
+      {opts.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          role="radio"
+          aria-checked={preference === o.key}
+          className={preference === o.key ? 'active' : ''}
+          onClick={() => setPreference(o.key)}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function Home() {
   const { session, signIn, signOut, loading } = useAuth();
@@ -89,6 +115,7 @@ export function Home() {
             Sign out
           </button>
         </div>
+        <ThemeToggle />
       </div>
     </main>
   );

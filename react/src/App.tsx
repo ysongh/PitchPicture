@@ -1,5 +1,6 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
+import { ThemeProvider } from './lib/theme';
 import { Home } from './pages/Home';
 import { Recording } from './pages/Recording';
 import { Processing } from './pages/Processing';
@@ -24,8 +25,9 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <HashRouter>
+    <ThemeProvider>
+      <AuthProvider>
+        <HashRouter>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route
@@ -69,8 +71,9 @@ export default function App() {
               </main>
             }
           />
-        </Routes>
-      </HashRouter>
-    </AuthProvider>
+          </Routes>
+        </HashRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

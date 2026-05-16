@@ -12,6 +12,21 @@
     <meta name="apple-mobile-web-app-title" content="PitchPic" />
     <meta name="mobile-web-app-capable" content="yes" />
     <title>Pitch Picture</title>
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('pp-theme');
+          var pref = saved === 'light' || saved === 'dark' || saved === 'system' ? saved : 'system';
+          var resolved =
+            pref === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : pref;
+          document.documentElement.setAttribute('data-theme', resolved);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

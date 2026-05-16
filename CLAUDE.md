@@ -134,6 +134,16 @@ Root `package.json` must have `"type": "module"` — `mermaid.ts` uses top-level
 - **Mermaid client render**: [react/src/components/DiagramView.tsx](react/src/components/DiagramView.tsx) initializes mermaid once (`securityLevel: 'strict'`) and renders into a ref'd `<div>` via `dangerouslySetInnerHTML`. Unique render IDs come from a module-level counter so React 19 strict-mode double-mounts don't collide. If render throws, the code is shown as a fallback.
 - **Multer upload field name is `audio`.** `curl -F "audio=@file.m4a;type=audio/mp4"`. Send the correct MIME type or storage will store the wrong content-type and Deepgram may reject it.
 
+## Theme (light / dark / system)
+
+[react/src/lib/theme.tsx](react/src/lib/theme.tsx) provides `ThemeProvider` + `useTheme`. Preference (`'system' | 'light' | 'dark'`) is stored in `localStorage` under `pp-theme`. The provider listens to `matchMedia('(prefers-color-scheme: dark)')` so System mode flips live when the OS toggles dark mode.
+
+Theming is driven by `data-theme="dark"` on `<html>`, **not** `@media (prefers-color-scheme)`. The dark CSS variables live under `:root[data-theme='dark']` in [react/src/index.css](react/src/index.css).
+
+To prevent a flash of wrong theme on cold load, [react/index.html](react/index.html) has an inline `<script>` in `<head>` that reads localStorage and sets `data-theme` **before React mounts**. Don't move this script — it must run synchronously before the stylesheet computes.
+
+**Mermaid theme is dynamic**: [react/src/components/DiagramView.tsx](react/src/components/DiagramView.tsx) reads `useTheme().resolved` and calls `mermaid.initialize({ theme: 'dark' | 'default' })` inside the render effect, with the resolved theme in the deps array so diagrams re-render when the user toggles. Mermaid's `'default'` theme produces dark text on light shapes; `'dark'` produces light text on dark shapes. Without this, dark mode shows light-on-light unreadable diagrams.
+
 ## PWA (mobile-web)
 
 Installable as a PWA on iOS Safari and Android Chrome. Files:
