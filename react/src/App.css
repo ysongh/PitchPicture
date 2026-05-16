@@ -1,7 +1,16 @@
 .page {
   max-width: 560px;
   margin: 0 auto;
-  padding: 4rem 1.5rem 6rem;
+  padding: 4rem 1.5rem calc(6rem + env(safe-area-inset-bottom, 0));
+  padding-top: calc(4rem + env(safe-area-inset-top, 0));
+}
+@media (max-width: 540px) {
+  .page {
+    padding-top: calc(2.25rem + env(safe-area-inset-top, 0));
+    padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0));
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 
 .hero {
@@ -13,6 +22,14 @@
   font-size: 2.4rem;
   margin: 0 0 0.4rem;
   letter-spacing: -0.5px;
+}
+@media (max-width: 540px) {
+  .hero {
+    margin-bottom: 1.75rem;
+  }
+  .hero h1 {
+    font-size: 1.85rem;
+  }
 }
 .hero .tagline {
   color: var(--text);
@@ -62,6 +79,7 @@ button,
   align-items: center;
   justify-content: center;
   padding: 0.6rem 1rem;
+  min-height: 44px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg);
@@ -69,6 +87,8 @@ button,
   cursor: pointer;
   text-decoration: none;
   transition: background 0.15s, border-color 0.15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 button:hover,
 .button:hover {
@@ -155,6 +175,17 @@ button:disabled {
 .big {
   padding: 0.85rem 1.6rem;
   font-size: 1.05rem;
+  min-height: 52px;
+}
+@media (max-width: 540px) {
+  .big {
+    width: 100%;
+    min-height: 60px;
+    font-size: 1.1rem;
+  }
+  .timer {
+    font-size: 3.6rem;
+  }
 }
 
 .page.wide {
@@ -183,10 +214,16 @@ button:disabled {
   display: flex;
   justify-content: center;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .diagram svg {
   max-width: 100%;
   height: auto;
+}
+@media (max-width: 540px) {
+  .diagram svg {
+    min-width: 100%;
+  }
 }
 
 .code-fallback {
@@ -275,6 +312,27 @@ button:disabled {
   gap: 0.4rem;
   font-size: 0.85rem;
   color: var(--text);
+}
+
+.session-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+.session-row .session-card {
+  flex: 1;
+  min-width: 0;
+}
+.session-delete {
+  flex-shrink: 0;
+  width: 44px;
+  padding: 0;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--text);
+}
+.session-delete:hover {
+  color: #dc2626;
 }
 
 .badge {

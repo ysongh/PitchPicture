@@ -134,6 +134,20 @@ Root `package.json` must have `"type": "module"` — `mermaid.ts` uses top-level
 - **Mermaid client render**: [react/src/components/DiagramView.tsx](react/src/components/DiagramView.tsx) initializes mermaid once (`securityLevel: 'strict'`) and renders into a ref'd `<div>` via `dangerouslySetInnerHTML`. Unique render IDs come from a module-level counter so React 19 strict-mode double-mounts don't collide. If render throws, the code is shown as a fallback.
 - **Multer upload field name is `audio`.** `curl -F "audio=@file.m4a;type=audio/mp4"`. Send the correct MIME type or storage will store the wrong content-type and Deepgram may reject it.
 
+## PWA (mobile-web)
+
+Installable as a PWA on iOS Safari and Android Chrome. Files:
+- [react/public/manifest.webmanifest](react/public/manifest.webmanifest) — name, theme color, standalone display, references `favicon.svg` for icons
+- [react/public/sw.js](react/public/sw.js) — minimal service worker, no caching; exists only so Chrome's install prompt fires
+- [react/index.html](react/index.html) — manifest link, apple-touch-icon, theme-color, `viewport-fit=cover` for notch safe areas
+- [react/src/main.tsx](react/src/main.tsx) — registers `sw.js` **only in `import.meta.env.PROD`** so dev HMR isn't interfered with
+- [react/src/App.css](react/src/App.css) — `min-height: 44px` on buttons, full-width primary action on `max-width: 540px`, `env(safe-area-inset-*)` padding on `.page`, momentum scroll on `.diagram`
+
+Limitations to know:
+- Install requires HTTPS — only works against the deployed Netlify URL, not `localhost`.
+- Icon is the SVG favicon. For crisp iOS rendering, drop a 180×180 PNG at `react/public/apple-touch-icon.png` and update the `<link>` href.
+- iOS still kills MediaRecorder when the app loses focus or the screen locks. No fix in v1; if it bites, the upgrade is a native mobile app.
+
 ## Acceptance for v1 ship
 
 Sign in with Google → record up to 30 min → see live status → diagram + summary within ~60s of stop → share link works without auth → history + delete works → Mermaid renders ≥95% of the time.
