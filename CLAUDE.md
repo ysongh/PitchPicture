@@ -112,7 +112,7 @@ pnpm test:analysis scripts/transcripts/<file>.txt
 pnpm test:pipeline <path-to-audio>.{webm,mp3,m4a,wav,ogg,flac}
 ```
 
-`tsx` does not auto-load `api/.env` when running from repo root — export vars inline or `export $(grep -v '^#' api/.env | xargs)` before running scripts.
+All scripts that touch `api/.env` pass it via `tsx --env-file` explicitly — `tsx` does **not** auto-load `.env`. Root: `tsx --env-file=api/.env scripts/...`. `api/` itself: `tsx watch --env-file=.env src/index.ts`. For production (Railway/Render), env vars come from the platform dashboard, not from a file, so `node dist/index.js` doesn't need the flag.
 
 Root `package.json` must have `"type": "module"` — `mermaid.ts` uses top-level `await import('mermaid')` which fails under CJS.
 

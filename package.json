@@ -6,8 +6,8 @@
     "dev:web": "pnpm -C react dev",
     "dev:api": "pnpm -C api dev",
     "build": "pnpm -C react build && pnpm -C api build",
-    "test:analysis": "tsx scripts/test-analysis.ts",
-    "test:pipeline": "tsx scripts/test-pipeline.ts"
+    "test:analysis": "tsx --env-file=api/.env scripts/test-analysis.ts",
+    "test:pipeline": "tsx --env-file=api/.env scripts/test-pipeline.ts"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.30.0",

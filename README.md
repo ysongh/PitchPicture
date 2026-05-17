@@ -104,11 +104,7 @@ pnpm test:analysis scripts/transcripts/<file>.txt    # transcript → Claude
 pnpm test:pipeline <path-to-audio>.{webm,mp3,m4a,wav,ogg,flac}  # audio → Claude
 ```
 
-The test scripts don't auto-load `api/.env`. Export first:
-
-```bash
-export $(grep -v '^#' api/.env | xargs)
-```
+The test scripts load `api/.env` automatically via `tsx --env-file`.
 
 ## How it works
 
