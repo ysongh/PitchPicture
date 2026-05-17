@@ -28,12 +28,68 @@ export function Recorder({ onStop, disabled }: Props) {
   const streamRef = useRef<MediaStream | null>(null);
   const tickRef = useRef<number | null>(null);
 
+  const [finalCaption, setFinalCaption] = useState('');
+  const [interimCaption, setInterimCaption] = useState('');
+  const speechRef = useRef<any>(null);
+  const speechActiveRef = useRef(false);
+  const captionScrollRef = useRef<HTMLDivElement | null>(null);
+
+  const SpeechRecognitionCtor: any =
+    typeof window !== 'undefined'
+      ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      : null;
+  const captionsSupported = !!SpeechRecognitionCtor;
+
   useEffect(() => {
     return () => {
       tickRef.current && window.clearInterval(tickRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      stopSpeech();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const el = captionScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [finalCaption, interimCaption]);
+
+  function startSpeech() {
+    if (!SpeechRecognitionCtor) return;
+    try {
+      const rec = new SpeechRecognitionCtor();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = 'en-US';
+      rec.onresult = (e: any) => {
+        let finalAdd = '';
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const r = e.results[i];
+          if (r.isFinal) finalAdd += r[0].transcript;
+          else interim += r[0].transcript;
+        }
+        if (finalAdd) setFinalCaption((prev) => (prev + ' ' + finalAdd).trim());
+        setInterimCaption(interim);
+      };
+      rec.onend = () => {
+        if (speechActiveRef.current) {
+          try { rec.start(); } catch { /* ignore */ }
+        }
+      };
+      rec.onerror = () => { /* swallow — captions are best-effort */ };
+      speechRef.current = rec;
+      speechActiveRef.current = true;
+      rec.start();
+    } catch { /* ignore */ }
+  }
+
+  function stopSpeech() {
+    speechActiveRef.current = false;
+    try { speechRef.current?.stop(); } catch { /* ignore */ }
+    speechRef.current = null;
+    setInterimCaption('');
+  }
 
   async function start() {
     setError(null);
@@ -68,6 +124,7 @@ export function Recorder({ onStop, disabled }: Props) {
           window.clearInterval(tickRef.current);
           tickRef.current = null;
         }
+        stopSpeech();
         setPhase('stopped');
         onStop(blob, duration);
       };
@@ -75,6 +132,9 @@ export function Recorder({ onStop, disabled }: Props) {
       rec.start(1000);
       setSeconds(0);
       setPhase('recording');
+      setFinalCaption('');
+      setInterimCaption('');
+      startSpeech();
       tickRef.current = window.setInterval(() => {
         setSeconds((s) => {
           const next = s + 1;
@@ -126,6 +186,20 @@ export function Recorder({ onStop, disabled }: Props) {
             <p className="warn">
               Recording will auto-stop at {fmt(MAX_SECONDS)} ({fmt(MAX_SECONDS - seconds)} left).
             </p>
+          )}
+          {captionsSupported && (
+            <div className="caption-box" ref={captionScrollRef} aria-live="polite">
+              {finalCaption}
+              {interimCaption && (
+                <span className="caption-interim">
+                  {finalCaption ? ' ' : ''}
+                  {interimCaption}
+                </span>
+              )}
+              {!finalCaption && !interimCaption && (
+                <span className="caption-hint">Live captions will appear here…</span>
+              )}
+            </div>
           )}
         </>
       )}

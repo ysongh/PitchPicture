@@ -119,6 +119,8 @@ mic → MediaRecorder (webm/opus @ 64kbps)
 
 The backend returns immediately after upload; `processSession(id)` runs in the background. The frontend polls `GET /api/sessions/:id` every 2s until status flips to `ready`.
 
+While recording, the browser's `SpeechRecognition` API shows live captions for the speaker's benefit. These are display-only — the canonical transcript still comes from Deepgram after upload, so the two can differ. Captions work in Chromium browsers and Safari; Firefox simply hides the caption box.
+
 ## API
 
 | Method | Path | Auth | Purpose |

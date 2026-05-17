@@ -134,6 +134,16 @@ Root `package.json` must have `"type": "module"` — `mermaid.ts` uses top-level
 - **Mermaid client render**: [react/src/components/DiagramView.tsx](react/src/components/DiagramView.tsx) initializes mermaid once (`securityLevel: 'strict'`) and renders into a ref'd `<div>` via `dangerouslySetInnerHTML`. Unique render IDs come from a module-level counter so React 19 strict-mode double-mounts don't collide. If render throws, the code is shown as a fallback.
 - **Multer upload field name is `audio`.** `curl -F "audio=@file.m4a;type=audio/mp4"`. Send the correct MIME type or storage will store the wrong content-type and Deepgram may reject it.
 
+## Live captions during recording
+
+[react/src/components/Recorder.tsx](react/src/components/Recorder.tsx) shows live captions while recording using the browser's `SpeechRecognition` API (`webkitSpeechRecognition` on Safari). This is **display-only** — the canonical transcript still comes from Deepgram post-upload, so the live captions and the final transcript can differ.
+
+- Runs in parallel with `MediaRecorder`; started in `start()`, stopped in `rec.onstop` and on unmount.
+- Auto-restarts on `onend` while `speechActiveRef.current` is true (browsers cut the stream on silence).
+- Errors are swallowed — captions are best-effort and must never break the recording.
+- Unsupported in Firefox; the caption box is simply not rendered there (no error message in v1).
+- Chosen over Deepgram live streaming to avoid paying for transcription twice (streaming + pre-recorded are billed separately).
+
 ## Theme (light / dark / system)
 
 [react/src/lib/theme.tsx](react/src/lib/theme.tsx) provides `ThemeProvider` + `useTheme`. Preference (`'system' | 'light' | 'dark'`) is stored in `localStorage` under `pp-theme`. The provider listens to `matchMedia('(prefers-color-scheme: dark)')` so System mode flips live when the OS toggles dark mode.
