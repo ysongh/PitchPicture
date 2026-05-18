@@ -29,11 +29,13 @@ function ThemeToggle() {
 }
 
 export function Home() {
-  const { session, signIn, signOut, loading } = useAuth();
+  const { session, signIn, signUp, signOut, loading } = useAuth();
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -43,12 +45,22 @@ export function Home() {
     );
   }
 
-  async function handleSignIn(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setNotice(null);
     setSubmitting(true);
     try {
-      await signIn(email, password);
+      if (mode === 'signin') {
+        await signIn(email, password);
+      } else {
+        const { needsConfirmation } = await signUp(email, password);
+        if (needsConfirmation) {
+          setNotice('Check your email to confirm your account, then sign in.');
+          setMode('signin');
+          setPassword('');
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -63,8 +75,36 @@ export function Home() {
           <h1>Pitch Picture</h1>
           <p className="tagline">Pitch your idea, see the picture.</p>
         </div>
-        <form className="card" onSubmit={handleSignIn}>
-          <h2>Sign in</h2>
+        <form className="card" onSubmit={handleSubmit}>
+          <h2>{mode === 'signin' ? 'Sign in' : 'Create account'}</h2>
+          <div className="auth-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'signin'}
+              className={mode === 'signin' ? 'active' : ''}
+              onClick={() => {
+                setMode('signin');
+                setError(null);
+                setNotice(null);
+              }}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === 'signup'}
+              className={mode === 'signup' ? 'active' : ''}
+              onClick={() => {
+                setMode('signup');
+                setError(null);
+                setNotice(null);
+              }}
+            >
+              Sign up
+            </button>
+          </div>
           <label>
             Email
             <input
@@ -82,12 +122,20 @@ export function Home() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              minLength={mode === 'signup' ? 6 : undefined}
             />
           </label>
           {error && <p className="error">{error}</p>}
+          {notice && <p className="notice">{notice}</p>}
           <button type="submit" disabled={submitting} className="primary">
-            {submitting ? 'Signing in…' : 'Sign in'}
+            {submitting
+              ? mode === 'signin'
+                ? 'Signing in…'
+                : 'Creating account…'
+              : mode === 'signin'
+                ? 'Sign in'
+                : 'Sign up'}
           </button>
         </form>
       </main>

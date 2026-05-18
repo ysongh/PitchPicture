@@ -12,6 +12,7 @@ interface AuthState {
   session: SupabaseSession | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
   signOut: () => Promise<void>;
 }
 
@@ -37,12 +38,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
+  async function signUp(email: string, password: string) {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    return { needsConfirmation: !data.session };
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

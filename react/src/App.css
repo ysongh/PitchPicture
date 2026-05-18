@@ -147,6 +147,34 @@ button:disabled {
   margin: 0;
   font-size: 0.9rem;
 }
+.notice {
+  color: var(--accent, #2563eb);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 0.25rem;
+  background: var(--surface-2, rgba(0, 0, 0, 0.05));
+  padding: 0.25rem;
+  border-radius: 8px;
+}
+.auth-tabs button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: inherit;
+}
+.auth-tabs button.active {
+  background: var(--surface, #fff);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+}
 @media (prefers-color-scheme: dark) {
   .warn {
     color: #fbbf24;
