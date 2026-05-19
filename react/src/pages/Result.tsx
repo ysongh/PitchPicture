@@ -100,6 +100,19 @@ export function Result() {
         </div>
       )}
 
+      {session.transcript && (
+        <div className="card">
+          <details>
+            <summary>
+              <h2 style={{ display: 'inline' }}>Transcript</h2>
+            </summary>
+            <p style={{ whiteSpace: 'pre-wrap', marginTop: '0.75rem' }}>
+              {session.transcript}
+            </p>
+          </details>
+        </div>
+      )}
+
       <div className="row">
         <button type="button" className="primary" onClick={copyShare}>
           {copied ? 'Copied!' : 'Copy share link'}
