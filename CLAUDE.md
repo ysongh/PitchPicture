@@ -49,6 +49,7 @@ PitchPicture/
 ```
 POST   /api/sessions                   → { id, status: 'uploading' }
 POST   /api/sessions/:id/audio         → multipart upload, triggers async pipeline
+POST   /api/sessions/:id/retry         → re-run pipeline against existing audio (status must be 'failed')
 GET    /api/sessions/:id               → full session (frontend polls every 2s)
 GET    /api/sessions                   → list current user's sessions
 GET    /api/share/:share_token         → public, no auth

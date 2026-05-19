@@ -46,6 +46,12 @@ export const api = {
 
   getSession: (id: string) => request<Session>(`/api/sessions/${id}`),
 
+  retry: (id: string) =>
+    request<{ id: string; status: 'transcribing' }>(
+      `/api/sessions/${id}/retry`,
+      { method: 'POST' }
+    ),
+
   del: (id: string) =>
     request<{ ok: true }>(`/api/sessions/${id}`, { method: 'DELETE' }),
 

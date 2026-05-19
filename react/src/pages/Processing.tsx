@@ -16,7 +16,37 @@ export function Processing() {
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const timerRef = useRef<number | null>(null);
+
+  async function handleRetry() {
+    if (!id) return;
+    setRetrying(true);
+    setError(null);
+    try {
+      await api.retry(id);
+      setSession((s) => (s ? { ...s, status: 'transcribing', error_message: null } : s));
+      timerRef.current = window.setTimeout(async function poll() {
+        try {
+          const s = await api.getSession(id);
+          setSession(s);
+          if (s.status === 'ready') {
+            navigate(`/result/${s.id}`, { replace: true });
+            return;
+          }
+          if (s.status === 'failed') return;
+          timerRef.current = window.setTimeout(poll, POLL_MS);
+        } catch (e) {
+          setError(e instanceof Error ? e.message : String(e));
+          timerRef.current = window.setTimeout(poll, POLL_MS);
+        }
+      }, POLL_MS);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRetrying(false);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -67,8 +97,16 @@ export function Processing() {
           <>
             <p className="error">{session?.error_message || 'Unknown error.'}</p>
             <div className="row">
-              <Link to="/record" className="primary button">
-                Try again
+              <button
+                type="button"
+                className="primary"
+                onClick={handleRetry}
+                disabled={retrying}
+              >
+                {retrying ? 'Retrying…' : 'Retry'}
+              </button>
+              <Link to="/record" className="button ghost">
+                New recording
               </Link>
               <Link to="/" className="button ghost">
                 Home

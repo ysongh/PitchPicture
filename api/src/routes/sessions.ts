@@ -76,6 +76,38 @@ router.post('/:id/audio', upload.single('audio'), async (req, res) => {
   res.json({ id, status: 'transcribing' });
 });
 
+// POST /api/sessions/:id/retry  → re-run the pipeline against the existing audio
+router.post('/:id/retry', async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
+
+  const { data: session, error: sErr } = await supabase()
+    .from('sessions')
+    .select('id, user_id, status, audio_path')
+    .eq('id', id)
+    .single();
+  if (sErr || !session) return res.status(404).json({ error: 'session not found' });
+  if (session.user_id !== userId) return res.status(403).json({ error: 'forbidden' });
+  if (!session.audio_path) return res.status(400).json({ error: 'no audio to retry' });
+  if (session.status !== 'failed') {
+    return res.status(409).json({ error: `cannot retry from status: ${session.status}` });
+  }
+
+  const { error: updErr } = await supabase()
+    .from('sessions')
+    .update({
+      status: 'transcribing',
+      error_message: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+  if (updErr) return res.status(500).json({ error: updErr.message });
+
+  processSession(id).catch((e) => console.error('[pipeline] unhandled', e));
+
+  res.json({ id, status: 'transcribing' });
+});
+
 // GET /api/sessions/:id  → full session
 router.get('/:id', async (req, res) => {
   const userId = req.user!.id;
