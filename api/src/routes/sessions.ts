@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { supabase, AUDIO_BUCKET } from '../services/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
-import { processSession } from '../pipeline.js';
+import { processSession, refineSession } from '../pipeline.js';
 
 const router = Router();
 
@@ -104,6 +104,38 @@ router.post('/:id/retry', async (req, res) => {
   if (updErr) return res.status(500).json({ error: updErr.message });
 
   processSession(id).catch((e) => console.error('[pipeline] unhandled', e));
+
+  res.json({ id, status: 'transcribing' });
+});
+
+// POST /api/sessions/:id/refine  → record a follow-up that refines the diagram
+router.post('/:id/refine', upload.single('audio'), async (req, res) => {
+  const userId = req.user!.id;
+  const { id } = req.params;
+  const file = req.file;
+  if (!file) return res.status(400).json({ error: 'audio file required' });
+
+  const { data: session, error: sErr } = await supabase()
+    .from('sessions')
+    .select('id, user_id, status')
+    .eq('id', id)
+    .single();
+  if (sErr || !session) return res.status(404).json({ error: 'session not found' });
+  if (session.user_id !== userId) return res.status(403).json({ error: 'forbidden' });
+  if (session.status !== 'ready') {
+    return res.status(409).json({ error: `can only refine a ready session (is: ${session.status})` });
+  }
+
+  const { error: updErr } = await supabase()
+    .from('sessions')
+    .update({ status: 'transcribing', updated_at: new Date().toISOString() })
+    .eq('id', id);
+  if (updErr) return res.status(500).json({ error: updErr.message });
+
+  // Fire and forget — refine audio is not persisted, only the new transcript is.
+  refineSession(id, file.buffer, file.mimetype || 'audio/webm').catch((e) =>
+    console.error('[pipeline] refine unhandled', e)
+  );
 
   res.json({ id, status: 'transcribing' });
 });

@@ -50,6 +50,7 @@ PitchPicture/
 POST   /api/sessions                   → { id, status: 'uploading' }
 POST   /api/sessions/:id/audio         → multipart upload, triggers async pipeline
 POST   /api/sessions/:id/retry         → re-run pipeline against existing audio (status must be 'failed')
+POST   /api/sessions/:id/refine        → multipart upload, refine the diagram with a follow-up recording (status must be 'ready')
 GET    /api/sessions/:id               → full session (frontend polls every 2s)
 GET    /api/sessions                   → list current user's sessions
 GET    /api/share/:share_token         → public, no auth
@@ -67,6 +68,16 @@ All routes except `/api/share/:token` require `Authorization: Bearer <supabase_j
 3. `ready`
 
 Any throw inside `processSession` marks the session `failed` with the error message. No process crash.
+
+## Refine
+
+`POST /api/sessions/:id/refine` lets a user record a short follow-up ("add a step between X and Y") that refines an existing `ready` diagram. `refineSession(id, buffer, mime)` runs in the background: transcribe the follow-up → `refineWithClaude` (existing transcript + current Mermaid + the new instruction → updated `Analysis`) → save.
+
+Two deliberate differences from `processSession`:
+- **Non-destructive on failure.** The session already has a valid diagram, so a failed refine restores `status: 'ready'` and stashes the reason in `error_message` (never `failed`). The old diagram is untouched. The Result page renders a `.warn` banner whenever a `ready` session has an `error_message`.
+- **Refine audio is not persisted.** The follow-up buffer is passed in-memory to `refineSession` and discarded; only the transcript is appended to `session.transcript` (under a `--- Refinement ---` divider). Consequence: a refine interrupted by a process restart cannot be retried — acceptable v1 fragility on single-instance deploys.
+
+The frontend reuses the `Recording` page in "refine mode" via the `/refine/:id` route (presence of the `:id` param switches it); on stop it calls `POST .../refine` and navigates to `/processing/:id`.
 
 ## Diagram types
 

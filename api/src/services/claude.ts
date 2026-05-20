@@ -40,6 +40,32 @@ Output valid JSON only, no preamble or markdown fences:
   "key_concepts": ["concept 1", "concept 2", ...]
 }`;
 
+const REFINE_SYSTEM_PROMPT = `You refine an existing diagram based on a follow-up instruction from the speaker.
+
+You are given:
+1. The ORIGINAL transcript the diagram was built from
+2. The CURRENT diagram (type, Mermaid code, summary, key concepts)
+3. A NEW follow-up recording where the speaker asks for changes
+
+Your job: produce an updated diagram that incorporates the follow-up while keeping everything the speaker did NOT ask to change as stable as possible. Make targeted edits, not a rewrite. Only switch diagram type if the follow-up clearly calls for a different structure.
+
+Same constraints as before:
+- Mermaid must parse on first try
+- Unique node IDs (no spaces, no special chars in IDs)
+- Keep diagrams under 15 nodes
+- Node labels: basic punctuation only, escape any quotes
+- Update the summary and key concepts to reflect the refined diagram
+
+Output valid JSON only, no preamble or markdown fences:
+{
+  "title": "3-7 words capturing the core idea",
+  "diagram_type": "flowchart" | "mindmap" | "architecture" | "decision_tree" | "sequence",
+  "reasoning": "one sentence on why this type fits",
+  "mermaid_code": "complete Mermaid syntax",
+  "summary": "2-3 sentences",
+  "key_concepts": ["concept 1", "concept 2", ...]
+}`;
+
 function extractJson(text: string): string {
   const trimmed = text.trim();
   if (trimmed.startsWith('{')) return trimmed;
@@ -51,14 +77,7 @@ function extractJson(text: string): string {
   return trimmed;
 }
 
-export async function analyzeWithClaude(
-  transcript: string,
-  previousError?: string
-): Promise<Analysis> {
-  const userMessage = previousError
-    ? `Transcript:\n\n${transcript}\n\nYour previous response had a Mermaid syntax error: "${previousError}". Generate corrected output.`
-    : `Transcript:\n\n${transcript}`;
-
+async function requestAnalysis(system: string, userMessage: string): Promise<Analysis> {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -69,7 +88,7 @@ export async function analyzeWithClaude(
     body: JSON.stringify({
       model: 'claude-sonnet-4-5',
       max_tokens: 4000,
-      system: SYSTEM_PROMPT,
+      system,
       messages: [{ role: 'user', content: userMessage }],
     }),
   });
@@ -79,8 +98,18 @@ export async function analyzeWithClaude(
   }
 
   const data = (await response.json()) as { content: Array<{ text: string }> };
-  const text = data.content[0].text;
-  const analysis = JSON.parse(extractJson(text)) as Analysis;
+  return JSON.parse(extractJson(data.content[0].text)) as Analysis;
+}
+
+export async function analyzeWithClaude(
+  transcript: string,
+  previousError?: string
+): Promise<Analysis> {
+  const userMessage = previousError
+    ? `Transcript:\n\n${transcript}\n\nYour previous response had a Mermaid syntax error: "${previousError}". Generate corrected output.`
+    : `Transcript:\n\n${transcript}`;
+
+  const analysis = await requestAnalysis(SYSTEM_PROMPT, userMessage);
 
   try {
     await validateMermaid(analysis.mermaid_code);
@@ -88,5 +117,38 @@ export async function analyzeWithClaude(
   } catch (err: any) {
     if (previousError) throw err;
     return analyzeWithClaude(transcript, err.message);
+  }
+}
+
+export interface RefineContext {
+  originalTranscript: string;
+  diagramType: string;
+  mermaidCode: string;
+  summary: string;
+  keyConcepts: string[];
+}
+
+export async function refineWithClaude(
+  ctx: RefineContext,
+  refinementTranscript: string,
+  previousError?: string
+): Promise<Analysis> {
+  const base = `ORIGINAL TRANSCRIPT:\n${ctx.originalTranscript}\n\n` +
+    `CURRENT DIAGRAM\nType: ${ctx.diagramType}\nMermaid:\n${ctx.mermaidCode}\n\n` +
+    `Current summary: ${ctx.summary}\n` +
+    `Current key concepts: ${ctx.keyConcepts.join(', ')}\n\n` +
+    `FOLLOW-UP RECORDING (the requested changes):\n${refinementTranscript}`;
+  const userMessage = previousError
+    ? `${base}\n\nYour previous response had a Mermaid syntax error: "${previousError}". Generate corrected output.`
+    : base;
+
+  const analysis = await requestAnalysis(REFINE_SYSTEM_PROMPT, userMessage);
+
+  try {
+    await validateMermaid(analysis.mermaid_code);
+    return analysis;
+  } catch (err: any) {
+    if (previousError) throw err;
+    return refineWithClaude(ctx, refinementTranscript, err.message);
   }
 }

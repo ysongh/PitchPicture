@@ -121,12 +121,16 @@ The backend returns immediately after upload; `processSession(id)` runs in the b
 
 While recording, the browser's `SpeechRecognition` API shows live captions for the speaker's benefit. These are display-only — the canonical transcript still comes from Deepgram after upload, so the two can differ. Captions work in Chromium browsers and Safari; Firefox simply hides the caption box.
 
+From a finished diagram you can **refine** it: record a short follow-up ("add a step between X and Y") and Claude updates the existing diagram instead of starting over. A failed refine is non-destructive — the original diagram stays intact.
+
 ## API
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
 | `POST` | `/api/sessions` | ✅ | Create session, returns id + `uploading` |
 | `POST` | `/api/sessions/:id/audio` | ✅ | Upload audio (multipart, field `audio`), kicks off pipeline |
+| `POST` | `/api/sessions/:id/retry` | ✅ | Re-run pipeline against existing audio (status `failed`) |
+| `POST` | `/api/sessions/:id/refine` | ✅ | Refine the diagram with a follow-up recording (status `ready`) |
 | `GET` | `/api/sessions/:id` | ✅ | Full session — frontend polls every 2s |
 | `GET` | `/api/sessions` | ✅ | List current user's sessions |
 | `DELETE` | `/api/sessions/:id` | ✅ | Delete row + audio file |

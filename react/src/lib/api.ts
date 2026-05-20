@@ -44,6 +44,16 @@ export const api = {
     );
   },
 
+  refine: async (id: string, blob: Blob) => {
+    const form = new FormData();
+    const ext = blob.type.includes('webm') ? 'webm' : 'bin';
+    form.append('audio', blob, `refinement.${ext}`);
+    return request<{ id: string; status: 'transcribing' }>(
+      `/api/sessions/${id}/refine`,
+      { method: 'POST', body: form }
+    );
+  },
+
   getSession: (id: string) => request<Session>(`/api/sessions/${id}`),
 
   retry: (id: string) =>

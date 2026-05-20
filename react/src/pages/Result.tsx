@@ -76,6 +76,10 @@ export function Result() {
         <p className="tagline">{session.diagram_type}</p>
       </div>
 
+      {session.error_message && (
+        <p className="warn">{session.error_message}</p>
+      )}
+
       {session.mermaid_code && (
         <div className="card">
           <DiagramView code={session.mermaid_code} />
@@ -117,7 +121,10 @@ export function Result() {
         <button type="button" className="primary" onClick={copyShare}>
           {copied ? 'Copied!' : 'Copy share link'}
         </button>
-        <Link to="/record" className="button">
+        <Link to={`/refine/${session.id}`} className="button">
+          Refine with a recording
+        </Link>
+        <Link to="/record" className="button ghost">
           New recording
         </Link>
         <Link to="/history" className="button ghost">

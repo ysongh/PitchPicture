@@ -39,6 +39,14 @@ export default function App() {
             }
           />
           <Route
+            path="/refine/:id"
+            element={
+              <RequireAuth>
+                <Recording />
+              </RequireAuth>
+            }
+          />
+          <Route
             path="/processing/:id"
             element={
               <RequireAuth>
