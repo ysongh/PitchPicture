@@ -27,6 +27,7 @@ export function Recorder({ onStop, disabled }: Props) {
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const tickRef = useRef<number | null>(null);
+  const secondsRef = useRef(0);
 
   const [finalCaption, setFinalCaption] = useState('');
   const [interimCaption, setInterimCaption] = useState('');
@@ -95,6 +96,7 @@ export function Recorder({ onStop, disabled }: Props) {
     tickRef.current = window.setInterval(() => {
       setSeconds((s) => {
         const next = s + 1;
+        secondsRef.current = next;
         if (next >= MAX_SECONDS && recorderRef.current?.state === 'recording') {
           recorderRef.current.stop();
         }
@@ -136,7 +138,7 @@ export function Recorder({ onStop, disabled }: Props) {
       };
       rec.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: MIME });
-        const duration = seconds;
+        const duration = secondsRef.current;
         streamRef.current?.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
         stopTick();
@@ -147,6 +149,7 @@ export function Recorder({ onStop, disabled }: Props) {
 
       rec.start(1000);
       setSeconds(0);
+      secondsRef.current = 0;
       setPhase('recording');
       setFinalCaption('');
       setInterimCaption('');
