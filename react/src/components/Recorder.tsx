@@ -5,7 +5,7 @@ const WARN_SECONDS = 25 * 60;
 const MIME = 'audio/webm;codecs=opus';
 const BITRATE = 64_000;
 
-type Phase = 'idle' | 'requesting' | 'recording' | 'stopped' | 'error';
+type Phase = 'idle' | 'requesting' | 'recording' | 'paused' | 'stopped' | 'error';
 
 interface Props {
   onStop: (blob: Blob, durationSeconds: number) => void;
@@ -91,6 +91,25 @@ export function Recorder({ onStop, disabled }: Props) {
     setInterimCaption('');
   }
 
+  function startTick() {
+    tickRef.current = window.setInterval(() => {
+      setSeconds((s) => {
+        const next = s + 1;
+        if (next >= MAX_SECONDS && recorderRef.current?.state === 'recording') {
+          recorderRef.current.stop();
+        }
+        return next;
+      });
+    }, 1000);
+  }
+
+  function stopTick() {
+    if (tickRef.current) {
+      window.clearInterval(tickRef.current);
+      tickRef.current = null;
+    }
+  }
+
   async function start() {
     setError(null);
     setPhase('requesting');
@@ -120,10 +139,7 @@ export function Recorder({ onStop, disabled }: Props) {
         const duration = seconds;
         streamRef.current?.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
-        if (tickRef.current) {
-          window.clearInterval(tickRef.current);
-          tickRef.current = null;
-        }
+        stopTick();
         stopSpeech();
         setPhase('stopped');
         onStop(blob, duration);
@@ -135,15 +151,7 @@ export function Recorder({ onStop, disabled }: Props) {
       setFinalCaption('');
       setInterimCaption('');
       startSpeech();
-      tickRef.current = window.setInterval(() => {
-        setSeconds((s) => {
-          const next = s + 1;
-          if (next >= MAX_SECONDS && recorderRef.current?.state === 'recording') {
-            recorderRef.current.stop();
-          }
-          return next;
-        });
-      }, 1000);
+      startTick();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError(
@@ -155,17 +163,35 @@ export function Recorder({ onStop, disabled }: Props) {
     }
   }
 
+  function pause() {
+    if (recorderRef.current?.state !== 'recording') return;
+    recorderRef.current.pause();
+    stopTick();
+    stopSpeech();
+    setPhase('paused');
+  }
+
+  function resume() {
+    if (recorderRef.current?.state !== 'paused') return;
+    recorderRef.current.resume();
+    startTick();
+    startSpeech();
+    setPhase('recording');
+  }
+
   function stop() {
-    if (recorderRef.current?.state === 'recording') {
-      recorderRef.current.stop();
+    const state = recorderRef.current?.state;
+    if (state === 'recording' || state === 'paused') {
+      recorderRef.current!.stop();
     }
   }
 
   const warning = seconds >= WARN_SECONDS && seconds < MAX_SECONDS;
+  const active = phase === 'recording' || phase === 'paused';
 
   return (
     <div className="recorder">
-      <div className={`timer ${phase === 'recording' ? 'live' : ''}`}>
+      <div className={`timer ${phase === 'recording' ? 'live' : ''} ${phase === 'paused' ? 'paused' : ''}`}>
         {fmt(seconds)}
       </div>
 
@@ -177,11 +203,27 @@ export function Recorder({ onStop, disabled }: Props) {
 
       {phase === 'requesting' && <p>Requesting microphone…</p>}
 
-      {phase === 'recording' && (
+      {active && (
         <>
-          <button type="button" className="primary big" onClick={stop}>
-            Stop
-          </button>
+          <div className="row">
+            {phase === 'recording' ? (
+              <button type="button" className="ghost big" onClick={pause}>
+                Pause
+              </button>
+            ) : (
+              <button type="button" className="primary big" onClick={resume}>
+                Resume
+              </button>
+            )}
+            <button
+              type="button"
+              className={`big ${phase === 'recording' ? 'primary' : 'ghost'}`}
+              onClick={stop}
+            >
+              Stop
+            </button>
+          </div>
+          {phase === 'paused' && <p className="notice">Recording paused.</p>}
           {warning && (
             <p className="warn">
               Recording will auto-stop at {fmt(MAX_SECONDS)} ({fmt(MAX_SECONDS - seconds)} left).
