@@ -5,7 +5,7 @@ const WARN_SECONDS = 25 * 60;
 const MIME = 'audio/webm;codecs=opus';
 const BITRATE = 64_000;
 
-type Phase = 'idle' | 'requesting' | 'recording' | 'paused' | 'stopped' | 'error';
+type Phase = 'idle' | 'requesting' | 'recording' | 'paused' | 'review' | 'stopped' | 'error';
 
 interface Props {
   onStop: (blob: Blob, durationSeconds: number) => void;
@@ -28,6 +28,9 @@ export function Recorder({ onStop, disabled }: Props) {
   const streamRef = useRef<MediaStream | null>(null);
   const tickRef = useRef<number | null>(null);
   const secondsRef = useRef(0);
+
+  const [takeBlob, setTakeBlob] = useState<Blob | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [finalCaption, setFinalCaption] = useState('');
   const [interimCaption, setInterimCaption] = useState('');
@@ -54,6 +57,16 @@ export function Recorder({ onStop, disabled }: Props) {
     const el = captionScrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [finalCaption, interimCaption]);
+
+  useEffect(() => {
+    if (!takeBlob) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(takeBlob);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [takeBlob]);
 
   function startSpeech() {
     if (!SpeechRecognitionCtor) return;
@@ -138,13 +151,12 @@ export function Recorder({ onStop, disabled }: Props) {
       };
       rec.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: MIME });
-        const duration = secondsRef.current;
         streamRef.current?.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
         stopTick();
         stopSpeech();
-        setPhase('stopped');
-        onStop(blob, duration);
+        setTakeBlob(blob);
+        setPhase('review');
       };
 
       rec.start(1000);
@@ -187,6 +199,21 @@ export function Recorder({ onStop, disabled }: Props) {
     if (state === 'recording' || state === 'paused') {
       recorderRef.current!.stop();
     }
+  }
+
+  function keepTake() {
+    if (!takeBlob) return;
+    setPhase('stopped');
+    onStop(takeBlob, secondsRef.current);
+  }
+
+  function discard() {
+    setTakeBlob(null);
+    setSeconds(0);
+    secondsRef.current = 0;
+    setFinalCaption('');
+    setInterimCaption('');
+    setPhase('idle');
   }
 
   const warning = seconds >= WARN_SECONDS && seconds < MAX_SECONDS;
@@ -244,6 +271,26 @@ export function Recorder({ onStop, disabled }: Props) {
               {!finalCaption && !interimCaption && (
                 <span className="caption-hint">Live captions will appear here…</span>
               )}
+            </div>
+          )}
+        </>
+      )}
+
+      {phase === 'review' && (
+        <>
+          <p className="notice">Listen back, then use this take or start over.</p>
+          {previewUrl && <audio className="take-preview" src={previewUrl} controls />}
+          <div className="row">
+            <button type="button" className="primary big" onClick={keepTake}>
+              Use this take
+            </button>
+            <button type="button" className="ghost big" onClick={discard}>
+              Discard &amp; re-record
+            </button>
+          </div>
+          {captionsSupported && finalCaption && (
+            <div className="caption-box" ref={captionScrollRef}>
+              {finalCaption}
             </div>
           )}
         </>

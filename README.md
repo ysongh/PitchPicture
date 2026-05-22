@@ -121,7 +121,7 @@ The backend returns immediately after upload; `processSession(id)` runs in the b
 
 While recording, the browser's `SpeechRecognition` API shows live captions for the speaker's benefit. These are display-only — the canonical transcript still comes from Deepgram after upload, so the two can differ. Captions work in Chromium browsers and Safari; Firefox simply hides the caption box.
 
-You can pause and resume mid-recording to gather your thoughts — paused time doesn't count toward the 30-minute cap.
+You can pause and resume mid-recording to gather your thoughts — paused time doesn't count toward the 30-minute cap. After stopping, you get to listen back and either use the take or discard it and start over; nothing is uploaded (and no session is created) until you confirm.
 
 From a finished diagram you can **refine** it: record a short follow-up ("add a step between X and Y") and Claude updates the existing diagram instead of starting over. A failed refine is non-destructive — the original diagram stays intact.
 

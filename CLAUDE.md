@@ -98,7 +98,7 @@ Backend uses the Supabase **service-role** key, which bypasses RLS. The route ha
 3. ✅ **Express API + Supabase.** 6 endpoints, multer audio upload, service-role DB + storage client, JWT middleware. Test with curl against an email/password user created via the Supabase dashboard.
 4. ✅ Frontend, split into three slices:
    - ✅ **4a.** Auth shell: `AuthProvider` + `useAuth`, Supabase anon client, fetch wrapper that auto-attaches the JWT, Home page with email/password sign-in.
-   - ✅ **4b.** `Recorder` component (MediaRecorder webm/opus @ 64kbps, 25-min warn, 30-min auto-stop, pause/resume) + `Recording` page that uploads to `POST /api/sessions/:id/audio`.
+   - ✅ **4b.** `Recorder` component (MediaRecorder webm/opus @ 64kbps, 25-min warn, 30-min auto-stop, pause/resume, review/discard before upload) + `Recording` page that uploads to `POST /api/sessions/:id/audio`.
    - ✅ **4c.** `Processing` page polls `GET /api/sessions/:id` every 2s and auto-navigates to `/result/:id` on `ready` (retry button on `failed`). `Result` page renders Mermaid client-side via `DiagramView` and includes a "Copy share link" button.
 5. Share view + history + delete, split into three slices:
    - ✅ **5a.** Public `Share` page at `/s/:token` calls `GET /api/share/:token` with `withAuth: false`. Reuses `DiagramView`. Friendly "Not found" for bad tokens or unready sessions.
@@ -139,6 +139,7 @@ Root `package.json` must have `"type": "module"` — `mermaid.ts` uses top-level
 - **CORS**: Express must allow `localhost:5173` or every dev fetch fails as a "Network Error" that's really a preflight rejection.
 - **Mermaid server-side validation** (`mermaid.parse` under JSDOM) is finicky on v11. If it breaks at import, fall back to a lightweight syntactic check and trust the client renderer.
 - **MediaRecorder**: use `audio/webm;codecs=opus` at 64kbps. Auto-stop at 30 min, warn at 25 min. Pause/resume uses the native `pause()`/`resume()` — while paused the timer interval is cleared (paused time isn't counted) and `SpeechRecognition` is stopped (it has no pause; it's torn down and a fresh instance is started on resume, with `finalCaption` preserved).
+- **Review before upload**: stopping a recording enters a `review` phase inside `Recorder` — the take is held in component state and `onStop` fires only when the user clicks "Use this take". "Discard & re-record" drops the take and returns to `idle`. Because `onStop` is the only thing that calls `api.createSession`, a discarded take never creates a session row. The take is previewed via an `<audio>` element fed by `URL.createObjectURL`, revoked on discard/unmount.
 - **Background work**: don't `await processSession(id)` in the route handler — return the response first, let it run, catch internally.
 - **`react/pnpm-lock.yaml`** is leftover from before workspaces; delete once Step 4 starts and root install owns the lockfile.
 - **Service-role key bypasses RLS.** Never put `SUPABASE_SERVICE_ROLE_KEY` in `react/.env` or send it to the browser. Frontend uses the `anon` key.
