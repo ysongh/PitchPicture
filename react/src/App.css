@@ -121,14 +121,12 @@ button:disabled {
 .danger:hover {
   background: rgba(220, 38, 38, 0.08);
 }
-@media (prefers-color-scheme: dark) {
-  .danger {
-    border-color: #f87171;
-    color: #f87171;
-  }
-  .danger:hover {
-    background: rgba(248, 113, 113, 0.12);
-  }
+:root[data-theme='dark'] .danger {
+  border-color: #f87171;
+  color: #f87171;
+}
+:root[data-theme='dark'] .danger:hover {
+  background: rgba(248, 113, 113, 0.12);
 }
 
 .row {
@@ -175,10 +173,8 @@ button:disabled {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   font-weight: 600;
 }
-@media (prefers-color-scheme: dark) {
-  .warn {
-    color: #fbbf24;
-  }
+:root[data-theme='dark'] .warn {
+  color: #fbbf24;
 }
 
 .recorder {
@@ -415,11 +411,9 @@ button:disabled {
 .badge-working { background: #fef3c7; color: #92400e; }
 .badge-failed { background: #fee2e2; color: #991b1b; }
 .badge-idle { background: var(--code-bg); color: var(--text); }
-@media (prefers-color-scheme: dark) {
-  .badge-ready { background: rgba(16,185,129,0.2); color: #6ee7b7; }
-  .badge-working { background: rgba(251,191,36,0.2); color: #fcd34d; }
-  .badge-failed { background: rgba(239,68,68,0.2); color: #fca5a5; }
-}
+:root[data-theme='dark'] .badge-ready { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+:root[data-theme='dark'] .badge-working { background: rgba(251,191,36,0.2); color: #fcd34d; }
+:root[data-theme='dark'] .badge-failed { background: rgba(239,68,68,0.2); color: #fca5a5; }
 
 .theme-toggle {
   display: inline-flex;
@@ -459,8 +453,6 @@ button:disabled {
 .share-link:hover {
   text-decoration: underline;
 }
-@media (prefers-color-scheme: dark) {
-  .error {
-    color: #f87171;
-  }
+:root[data-theme='dark'] .error {
+  color: #f87171;
 }
