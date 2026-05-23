@@ -2,7 +2,26 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { DiagramView } from '../components/DiagramView';
+import { AppShell } from '../components/AppShell';
+import {
+  ArrowLeftIcon,
+  CalendarIcon,
+  ChevronIcon,
+  LinkIcon,
+  MicIcon,
+  SparklesIcon,
+  TrashIcon,
+} from '../components/icons';
 import type { Session } from '../lib/types';
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
 
 export function Result() {
   const { id } = useParams<{ id: string }>();
@@ -43,102 +62,126 @@ export function Result() {
 
   if (error) {
     return (
-      <main className="page">
-        <p className="error">{error}</p>
-        <Link to="/" className="button">
-          Home
-        </Link>
-      </main>
+      <AppShell active="history">
+        <div className="pp-status-card pp-card">
+          <p className="error">{error}</p>
+          <Link to="/history" className="pp-btn pp-btn--secondary">
+            Back to history
+          </Link>
+        </div>
+      </AppShell>
     );
   }
+
   if (!session) {
     return (
-      <main className="page">
-        <p>Loading…</p>
-      </main>
+      <AppShell active="history">
+        <p className="pp-muted">Loading…</p>
+      </AppShell>
     );
   }
+
   if (session.status !== 'ready') {
     return (
-      <main className="page">
-        <p>Not ready yet. Status: {session.status}</p>
-        <Link to={`/processing/${session.id}`} className="button">
-          See progress
-        </Link>
-      </main>
+      <AppShell active="history">
+        <div className="pp-status-card pp-card">
+          <p className="pp-muted">Not ready yet — status: {session.status}</p>
+          <Link to={`/processing/${session.id}`} className="pp-btn pp-btn--primary">
+            See progress
+          </Link>
+        </div>
+      </AppShell>
     );
   }
 
+  const wordCount = session.transcript
+    ? session.transcript.trim().split(/\s+/).length
+    : 0;
+
   return (
-    <main className="page wide">
-      <div className="hero">
-        <h1>{session.title || 'Untitled pitch'}</h1>
-        <p className="tagline">{session.diagram_type}</p>
-      </div>
-
-      {session.error_message && (
-        <p className="warn">{session.error_message}</p>
-      )}
-
-      {session.mermaid_code && (
-        <div className="card">
-          <DiagramView code={session.mermaid_code} />
+    <AppShell active="history" wide>
+      <div className="pp-page">
+        <div className="pp-result-head">
+          <Link className="pp-back" to="/history">
+            <ArrowLeftIcon /> History
+          </Link>
+          <span className="pp-meta-dot" />
+          <CalendarIcon /> {formatDate(session.created_at)}
+          <span className="pp-meta-dot" />
+          <span className="pp-pill pp-pill--ready">ready</span>
         </div>
-      )}
 
-      {session.summary && (
-        <div className="card">
-          <h2>Summary</h2>
-          <p>{session.summary}</p>
+        <h1 className="pp-result-title">{session.title || 'Untitled pitch'}</h1>
+        {session.diagram_type && (
+          <div className="pp-result-sub">
+            <span className="pp-chip">{session.diagram_type.replace(/_/g, ' ')}</span>
+          </div>
+        )}
+
+        {session.error_message && (
+          <p className="warn" style={{ marginTop: 12 }}>
+            {session.error_message}
+          </p>
+        )}
+
+        {session.mermaid_code && (
+          <div className="pp-canvas">
+            <DiagramView code={session.mermaid_code} />
+          </div>
+        )}
+
+        <div className="pp-actions">
+          <button type="button" className="pp-btn pp-btn--primary" onClick={copyShare}>
+            <LinkIcon /> {copied ? 'Copied!' : 'Copy share link'}
+          </button>
+          <Link to={`/refine/${session.id}`} className="pp-btn pp-btn--secondary">
+            <SparklesIcon /> Refine with a recording
+          </Link>
+          <Link to="/record" className="pp-btn pp-btn--secondary">
+            <MicIcon /> New recording
+          </Link>
+          <span className="pp-actions-spacer" />
+          <span className="pp-actions-divider" />
+          <button
+            type="button"
+            className="pp-btn pp-btn--danger"
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            <TrashIcon /> {deleting ? 'Deleting…' : 'Delete'}
+          </button>
         </div>
-      )}
 
-      {session.key_concepts && session.key_concepts.length > 0 && (
-        <div className="card">
-          <h2>Key concepts</h2>
-          <ul>
-            {session.key_concepts.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {session.summary && (
+          <section className="pp-section">
+            <h2 className="pp-section-title">Summary</h2>
+            <p className="pp-section-body">{session.summary}</p>
+          </section>
+        )}
 
-      {session.transcript && (
-        <div className="card">
-          <details>
+        {session.key_concepts && session.key_concepts.length > 0 && (
+          <section className="pp-section">
+            <h2 className="pp-section-title">Key concepts</h2>
+            <div className="pp-tags">
+              {session.key_concepts.map((c) => (
+                <span key={c} className="pp-tag">
+                  {c}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {session.transcript && (
+          <details className="pp-transcript">
             <summary>
-              <h2 style={{ display: 'inline' }}>Transcript</h2>
+              <ChevronIcon />
+              Transcript · {wordCount} {wordCount === 1 ? 'word' : 'words'}
             </summary>
-            <p style={{ whiteSpace: 'pre-wrap', marginTop: '0.75rem' }}>
-              {session.transcript}
-            </p>
+            <div className="pp-transcript-body">{session.transcript}</div>
           </details>
-        </div>
-      )}
-
-      <div className="row">
-        <button type="button" className="primary" onClick={copyShare}>
-          {copied ? 'Copied!' : 'Copy share link'}
-        </button>
-        <Link to={`/refine/${session.id}`} className="button">
-          Refine with a recording
-        </Link>
-        <Link to="/record" className="button ghost">
-          New recording
-        </Link>
-        <Link to="/history" className="button ghost">
-          History
-        </Link>
-        <button
-          type="button"
-          className="danger"
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          {deleting ? 'Deleting…' : 'Delete'}
-        </button>
+        )}
       </div>
-    </main>
+    </AppShell>
   );
 }

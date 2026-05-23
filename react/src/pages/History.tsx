@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
+import { AppShell } from '../components/AppShell';
+import { Menu } from '../components/Menu';
+import { CalendarIcon, KebabIcon, LinkIcon, MicIcon, PlusIcon, TrashIcon } from '../components/icons';
 import type { SessionStatus } from '../lib/types';
 
 type Row = Awaited<ReturnType<typeof api.list>>[number];
 
-function statusClass(s: SessionStatus): string {
-  if (s === 'ready') return 'badge badge-ready';
-  if (s === 'failed') return 'badge badge-failed';
-  if (s === 'uploading') return 'badge badge-idle';
-  return 'badge badge-working';
+function pillKind(s: SessionStatus): 'ready' | 'processing' | 'failed' {
+  if (s === 'ready') return 'ready';
+  if (s === 'failed') return 'failed';
+  return 'processing';
 }
 
 function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
+  return new Date(iso).toLocaleString(undefined, {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
@@ -22,14 +23,121 @@ function formatDate(iso: string): string {
   });
 }
 
-function rowHref(r: Row): string {
-  return r.status === 'ready' ? `/result/${r.id}` : `/processing/${r.id}`;
+function HistoryRow({
+  row,
+  onDeleted,
+  onError,
+}: {
+  row: Row;
+  onDeleted: (id: string) => void;
+  onError: (msg: string) => void;
+}) {
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const href = row.status === 'ready' ? `/result/${row.id}` : `/processing/${row.id}`;
+
+  async function copyLink() {
+    try {
+      const s = await api.getSession(row.id);
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/#/s/${s.share_token}`
+      );
+    } catch (e) {
+      onError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('Delete this pitch? This cannot be undone.')) return;
+    setBusy(true);
+    try {
+      await api.del(row.id);
+      onDeleted(row.id);
+    } catch (e) {
+      onError(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <article
+      className="pp-history-item"
+      role="button"
+      tabIndex={0}
+      onClick={() => navigate(href)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          navigate(href);
+        }
+      }}
+    >
+      <div className="pp-history-main">
+        <div className="pp-history-title">{row.title || 'Untitled pitch'}</div>
+        <div className="pp-history-meta">
+          {row.diagram_type && (
+            <span className="pp-chip">{row.diagram_type.replace(/_/g, ' ')}</span>
+          )}
+          <span className="pp-meta-dot" />
+          <CalendarIcon />
+          <span>{formatDate(row.created_at)}</span>
+        </div>
+      </div>
+
+      <span className={`pp-pill pp-pill--${pillKind(row.status)}`}>{row.status}</span>
+
+      <Menu
+        align="end"
+        trigger={({ open, toggle }) => (
+          <button
+            type="button"
+            className="pp-icon-btn"
+            onClick={toggle}
+            aria-label="More actions"
+            aria-expanded={open}
+            aria-haspopup="menu"
+          >
+            <KebabIcon />
+          </button>
+        )}
+      >
+        {(close) => (
+          <>
+            {row.status === 'ready' && (
+              <button
+                type="button"
+                className="pp-menu-item"
+                role="menuitem"
+                onClick={() => {
+                  close();
+                  void copyLink();
+                }}
+              >
+                <LinkIcon /> Copy share link
+              </button>
+            )}
+            <button
+              type="button"
+              className="pp-menu-item pp-menu-item--danger"
+              role="menuitem"
+              disabled={busy}
+              onClick={() => {
+                close();
+                void handleDelete();
+              }}
+            >
+              <TrashIcon /> Delete
+            </button>
+          </>
+        )}
+      </Menu>
+    </article>
+  );
 }
 
 export function History() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -38,96 +146,66 @@ export function History() {
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
-  async function handleDelete(id: string) {
-    if (!window.confirm('Delete this pitch? This cannot be undone.')) return;
-    setDeletingId(id);
-    try {
-      await api.del(id);
-      setRows((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
   if (error) {
     return (
-      <main className="page">
-        <p className="error">{error}</p>
-        <Link to="/" className="button">
-          Home
-        </Link>
-      </main>
+      <AppShell active="history">
+        <div className="pp-status-card pp-card">
+          <p className="error">{error}</p>
+          <Link to="/" className="pp-btn pp-btn--secondary">
+            Home
+          </Link>
+        </div>
+      </AppShell>
     );
   }
 
   if (!rows) {
     return (
-      <main className="page">
-        <p>Loading…</p>
-      </main>
+      <AppShell active="history">
+        <p className="pp-muted">Loading…</p>
+      </AppShell>
     );
   }
 
   return (
-    <main className="page wide">
-      <div className="hero">
-        <h1>Your pitches</h1>
-        <p className="tagline">
-          {rows.length === 0
-            ? 'Nothing yet.'
-            : `${rows.length} session${rows.length === 1 ? '' : 's'}`}
-        </p>
-      </div>
+    <AppShell active="history" wide>
+      <div className="pp-page">
+        <div className="pp-page-head">
+          <div>
+            <h1>Your pitches</h1>
+            <div className="pp-page-count">
+              {rows.length === 0
+                ? 'Nothing yet'
+                : `${rows.length} session${rows.length === 1 ? '' : 's'}`}
+            </div>
+          </div>
+          <Link to="/record" className="pp-btn pp-btn--primary">
+            <PlusIcon /> New recording
+          </Link>
+        </div>
 
-      {rows.length === 0 ? (
-        <div className="card">
-          <p>No sessions yet — start your first recording.</p>
-          <div className="row">
-            <Link to="/record" className="primary button">
-              Start recording
+        {rows.length === 0 ? (
+          <div className="pp-empty pp-card">
+            <p>No sessions yet — start your first recording.</p>
+            <Link to="/record" className="pp-btn pp-btn--primary">
+              <MicIcon /> Start recording
             </Link>
           </div>
-        </div>
-      ) : (
-        <ul className="session-list">
-          {rows.map((r) => (
-            <li key={r.id} className="session-row">
-              <Link to={rowHref(r)} className="session-card">
-                <div className="session-main">
-                  <div className="session-title">{r.title || 'Untitled pitch'}</div>
-                  <div className="session-meta">
-                    {r.diagram_type ? <span>{r.diagram_type}</span> : null}
-                    <span>·</span>
-                    <span>{formatDate(r.created_at)}</span>
-                  </div>
-                </div>
-                <span className={statusClass(r.status)}>{r.status}</span>
-              </Link>
-              <button
-                type="button"
-                className="session-delete"
-                aria-label="Delete pitch"
-                onClick={() => handleDelete(r.id)}
-                disabled={deletingId === r.id}
-                title="Delete"
-              >
-                {deletingId === r.id ? '…' : '×'}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="row" style={{ marginTop: '1.5rem' }}>
-        <Link to="/" className="button ghost">
-          Home
-        </Link>
-        <Link to="/record" className="button">
-          New recording
-        </Link>
+        ) : (
+          <div className="pp-history-list">
+            {rows.map((r) => (
+              <HistoryRow
+                key={r.id}
+                row={r}
+                onDeleted={(id) =>
+                  setRows((prev) => (prev ? prev.filter((x) => x.id !== id) : prev))
+                }
+                onError={setError}
+              />
+            ))}
+          </div>
+        )}
       </div>
-    </main>
+    </AppShell>
   );
 }

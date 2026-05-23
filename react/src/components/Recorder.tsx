@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { MicGlyph, StopGlyph } from './icons';
 
 const MAX_SECONDS = 30 * 60;
 const WARN_SECONDS = 25 * 60;
 const MIME = 'audio/webm;codecs=opus';
 const BITRATE = 64_000;
 
+const WAVE = [14, 28, 42, 22, 36, 18, 30, 44, 26, 32, 20, 38, 24, 34, 16];
+
 type Phase = 'idle' | 'requesting' | 'recording' | 'paused' | 'review' | 'stopped' | 'error';
 
 interface Props {
   onStop: (blob: Blob, durationSeconds: number) => void;
   disabled?: boolean;
+  /** Where the Cancel link goes (idle / error phases). */
+  cancelTo?: string;
 }
 
 function fmt(s: number): string {
@@ -18,7 +24,24 @@ function fmt(s: number): string {
   return `${m}:${r.toString().padStart(2, '0')}`;
 }
 
-export function Recorder({ onStop, disabled }: Props) {
+function Waveform({ active }: { active: boolean }) {
+  return (
+    <div className={'pp-waveform' + (active ? ' is-active' : '')} aria-hidden="true">
+      {WAVE.map((h, i) => (
+        <span
+          key={i}
+          style={{
+            height: active ? h : 4,
+            opacity: active ? 1 : 0.35,
+            animationDelay: `${i * 0.07}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export function Recorder({ onStop, disabled, cancelTo }: Props) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -88,19 +111,31 @@ export function Recorder({ onStop, disabled }: Props) {
       };
       rec.onend = () => {
         if (speechActiveRef.current) {
-          try { rec.start(); } catch { /* ignore */ }
+          try {
+            rec.start();
+          } catch {
+            /* ignore */
+          }
         }
       };
-      rec.onerror = () => { /* swallow — captions are best-effort */ };
+      rec.onerror = () => {
+        /* swallow — captions are best-effort */
+      };
       speechRef.current = rec;
       speechActiveRef.current = true;
       rec.start();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   function stopSpeech() {
     speechActiveRef.current = false;
-    try { speechRef.current?.stop(); } catch { /* ignore */ }
+    try {
+      speechRef.current?.stop();
+    } catch {
+      /* ignore */
+    }
     speechRef.current = null;
     setInterimCaption('');
   }
@@ -220,38 +255,60 @@ export function Recorder({ onStop, disabled }: Props) {
   const active = phase === 'recording' || phase === 'paused';
 
   return (
-    <div className="recorder">
-      <div className={`timer ${phase === 'recording' ? 'live' : ''} ${phase === 'paused' ? 'paused' : ''}`}>
+    <div className="pp-recorder">
+      <div
+        className={
+          'pp-timer' +
+          (phase === 'recording' ? ' is-live' : '') +
+          (phase === 'paused' ? ' is-paused' : '')
+        }
+      >
         {fmt(seconds)}
       </div>
 
+      <Waveform active={phase === 'recording'} />
+
       {phase === 'idle' && (
-        <button type="button" className="primary big" onClick={start} disabled={disabled}>
-          Start recording
-        </button>
+        <>
+          <button
+            type="button"
+            className="pp-record-button"
+            onClick={start}
+            disabled={disabled}
+            aria-label="Start recording"
+          >
+            <MicGlyph />
+          </button>
+          {cancelTo && (
+            <Link to={cancelTo} className="pp-link">
+              Cancel
+            </Link>
+          )}
+        </>
       )}
 
-      {phase === 'requesting' && <p>Requesting microphone…</p>}
+      {phase === 'requesting' && <p className="pp-muted">Requesting microphone…</p>}
 
       {active && (
         <>
-          <div className="row">
+          <button
+            type="button"
+            className="pp-record-button is-recording"
+            onClick={stop}
+            aria-label="Stop recording"
+          >
+            <StopGlyph />
+          </button>
+          <div className="pp-row pp-row--center">
             {phase === 'recording' ? (
-              <button type="button" className="ghost big" onClick={pause}>
+              <button type="button" className="pp-btn pp-btn--secondary" onClick={pause}>
                 Pause
               </button>
             ) : (
-              <button type="button" className="primary big" onClick={resume}>
+              <button type="button" className="pp-btn pp-btn--secondary" onClick={resume}>
                 Resume
               </button>
             )}
-            <button
-              type="button"
-              className={`big ${phase === 'recording' ? 'primary' : 'ghost'}`}
-              onClick={stop}
-            >
-              Stop
-            </button>
           </div>
           {phase === 'paused' && <p className="notice">Recording paused.</p>}
           {warning && (
@@ -260,16 +317,16 @@ export function Recorder({ onStop, disabled }: Props) {
             </p>
           )}
           {captionsSupported && (
-            <div className="caption-box" ref={captionScrollRef} aria-live="polite">
+            <div className="pp-captions" ref={captionScrollRef} aria-live="polite">
               {finalCaption}
               {interimCaption && (
-                <span className="caption-interim">
+                <span className="pp-caption-interim">
                   {finalCaption ? ' ' : ''}
                   {interimCaption}
                 </span>
               )}
               {!finalCaption && !interimCaption && (
-                <span className="caption-hint">Live captions will appear here…</span>
+                <span className="pp-caption-hint">Live captions will appear here…</span>
               )}
             </div>
           )}
@@ -279,26 +336,35 @@ export function Recorder({ onStop, disabled }: Props) {
       {phase === 'review' && (
         <>
           <p className="notice">Listen back, then use this take or start over.</p>
-          {previewUrl && <audio className="take-preview" src={previewUrl} controls />}
-          <div className="row">
-            <button type="button" className="primary big" onClick={keepTake}>
+          {previewUrl && <audio className="pp-audio" src={previewUrl} controls />}
+          <div className="pp-row pp-row--center">
+            <button type="button" className="pp-btn pp-btn--primary" onClick={keepTake}>
               Use this take
             </button>
-            <button type="button" className="ghost big" onClick={discard}>
+            <button type="button" className="pp-btn pp-btn--secondary" onClick={discard}>
               Discard &amp; re-record
             </button>
           </div>
           {captionsSupported && finalCaption && (
-            <div className="caption-box" ref={captionScrollRef}>
+            <div className="pp-captions" ref={captionScrollRef}>
               {finalCaption}
             </div>
           )}
         </>
       )}
 
-      {phase === 'stopped' && <p>Recording stopped.</p>}
+      {phase === 'stopped' && <p className="pp-muted">Recording stopped.</p>}
 
-      {phase === 'error' && error && <p className="error">{error}</p>}
+      {phase === 'error' && error && (
+        <>
+          <p className="error">{error}</p>
+          {cancelTo && (
+            <Link to={cancelTo} className="pp-link">
+              Cancel
+            </Link>
+          )}
+        </>
+      )}
     </div>
   );
 }

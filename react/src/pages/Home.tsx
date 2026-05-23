@@ -1,35 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { useTheme, type ThemePreference } from '../lib/theme';
-
-function ThemeToggle() {
-  const { preference, setPreference } = useTheme();
-  const opts: Array<{ key: ThemePreference; label: string }> = [
-    { key: 'system', label: 'System' },
-    { key: 'light', label: 'Light' },
-    { key: 'dark', label: 'Dark' },
-  ];
-  return (
-    <div className="theme-toggle" role="radiogroup" aria-label="Theme">
-      {opts.map((o) => (
-        <button
-          key={o.key}
-          type="button"
-          role="radio"
-          aria-checked={preference === o.key}
-          className={preference === o.key ? 'active' : ''}
-          onClick={() => setPreference(o.key)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
+import { AppShell } from '../components/AppShell';
+import { MicIcon } from '../components/icons';
 
 export function Home() {
-  const { session, signIn, signUp, signOut, loading } = useAuth();
+  const { session, signIn, signUp, loading } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,9 +15,9 @@ export function Home() {
 
   if (loading) {
     return (
-      <main className="page">
-        <p>Loading…</p>
-      </main>
+      <div className="pp-fallback">
+        <p className="pp-muted">Loading…</p>
+      </div>
     );
   }
 
@@ -70,101 +46,101 @@ export function Home() {
 
   if (!session) {
     return (
-      <main className="page">
-        <div className="hero">
-          <h1>Pitch Picture</h1>
-          <p className="tagline">Pitch your idea, see the picture.</p>
-        </div>
-        <form className="card" onSubmit={handleSubmit}>
-          <h2>{mode === 'signin' ? 'Sign in' : 'Create account'}</h2>
-          <div className="auth-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'signin'}
-              className={mode === 'signin' ? 'active' : ''}
-              onClick={() => {
-                setMode('signin');
-                setError(null);
-                setNotice(null);
-              }}
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'signup'}
-              className={mode === 'signup' ? 'active' : ''}
-              onClick={() => {
-                setMode('signup');
-                setError(null);
-                setNotice(null);
-              }}
-            >
-              Sign up
-            </button>
+      <AppShell minimal>
+        <div className="pp-auth">
+          <div className="pp-auth-head">
+            <h1>Pitch Picture</h1>
+            <p>Pitch your idea, see the picture.</p>
           </div>
-          <label>
-            Email
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-              minLength={mode === 'signup' ? 6 : undefined}
-            />
-          </label>
-          {error && <p className="error">{error}</p>}
-          {notice && <p className="notice">{notice}</p>}
-          <button type="submit" disabled={submitting} className="primary">
-            {submitting
-              ? mode === 'signin'
-                ? 'Signing in…'
-                : 'Creating account…'
-              : mode === 'signin'
-                ? 'Sign in'
-                : 'Sign up'}
-          </button>
-        </form>
-      </main>
+          <form className="pp-card pp-auth-card" onSubmit={handleSubmit}>
+            <div className="pp-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mode === 'signin'}
+                className={mode === 'signin' ? 'active' : ''}
+                onClick={() => {
+                  setMode('signin');
+                  setError(null);
+                  setNotice(null);
+                }}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mode === 'signup'}
+                className={mode === 'signup' ? 'active' : ''}
+                onClick={() => {
+                  setMode('signup');
+                  setError(null);
+                  setNotice(null);
+                }}
+              >
+                Sign up
+              </button>
+            </div>
+            <label className="pp-field">
+              <span>Email</span>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+              />
+            </label>
+            <label className="pp-field">
+              <span>Password</span>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                minLength={mode === 'signup' ? 6 : undefined}
+              />
+            </label>
+            {error && <p className="error">{error}</p>}
+            {notice && <p className="notice">{notice}</p>}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="pp-btn pp-btn--primary pp-btn--block"
+            >
+              {submitting
+                ? mode === 'signin'
+                  ? 'Signing in…'
+                  : 'Creating account…'
+                : mode === 'signin'
+                  ? 'Sign in'
+                  : 'Sign up'}
+            </button>
+          </form>
+        </div>
+      </AppShell>
     );
   }
 
   return (
-    <main className="page">
-      <div className="hero">
-        <h1>Pitch Picture</h1>
-        <p className="tagline">Pitch your idea, see the picture.</p>
-      </div>
-      <div className="card">
+    <AppShell active="home">
+      <section className="pp-hero">
+        <div className="eyebrow">Welcome back</div>
+        <h1>What's the idea?</h1>
         <p>
-          Signed in as <strong>{session.user.email}</strong>
+          Talk it through for up to 30 minutes — Pitch Picture turns the recording into a
+          diagram you can share.
         </p>
-        <div className="row">
-          <Link to="/record" className="primary button">
-            Start recording
+        <div className="pp-hero-actions">
+          <Link to="/record" className="pp-btn pp-btn--primary pp-btn--large">
+            <MicIcon /> Start recording
           </Link>
-          <Link to="/history" className="button">
-            History
+          <Link to="/history" className="pp-link">
+            or browse your history →
           </Link>
-          <button type="button" onClick={signOut} className="ghost">
-            Sign out
-          </button>
         </div>
-        <ThemeToggle />
-      </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }

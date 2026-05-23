@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Recorder } from '../components/Recorder';
+import { AppShell } from '../components/AppShell';
 import { api } from '../lib/api';
 
 type Phase = 'recording' | 'uploading' | 'error';
@@ -11,6 +12,8 @@ export function Recording() {
   const isRefine = !!refineId;
   const [phase, setPhase] = useState<Phase>('recording');
   const [error, setError] = useState<string | null>(null);
+
+  const cancelTo = isRefine ? `/result/${refineId}` : '/';
 
   async function handleStop(blob: Blob) {
     setPhase('uploading');
@@ -31,32 +34,35 @@ export function Recording() {
   }
 
   return (
-    <main className="page">
-      <div className="hero">
-        <h1>{isRefine ? 'Refine your diagram' : 'Record your pitch'}</h1>
-        <p className="tagline">
-          {isRefine
-            ? 'Record a short follow-up — say what should change.'
-            : 'Hit start, talk for up to 30 minutes, hit stop.'}
-        </p>
-      </div>
-      <div className="card">
-        {phase === 'recording' && <Recorder onStop={handleStop} />}
-        {phase === 'uploading' && <p>{isRefine ? 'Refining…' : 'Uploading…'}</p>}
+    <AppShell active="home">
+      <section className="pp-record">
+        <div className="pp-record-head">
+          <h1>{isRefine ? 'Refine your diagram' : 'Record your pitch'}</h1>
+          <p>
+            {isRefine
+              ? 'Record a short follow-up — say what should change.'
+              : 'Hit start, talk for up to 30 minutes, hit stop.'}
+          </p>
+        </div>
+
+        {phase === 'recording' && <Recorder onStop={handleStop} cancelTo={cancelTo} />}
+
+        {phase === 'uploading' && (
+          <div className="pp-row pp-row--center">
+            <span className="pp-spinner" aria-hidden />
+            <span className="pp-muted">{isRefine ? 'Refining…' : 'Uploading…'}</span>
+          </div>
+        )}
+
         {phase === 'error' && (
           <>
             <p className="error">{error}</p>
-            <Link to={isRefine ? `/result/${refineId}` : '/'} className="button">
+            <Link to={cancelTo} className="pp-btn pp-btn--secondary">
               {isRefine ? 'Back to diagram' : 'Back home'}
             </Link>
           </>
         )}
-        {phase === 'recording' && (
-          <Link to={isRefine ? `/result/${refineId}` : '/'} className="button ghost">
-            Cancel
-          </Link>
-        )}
-      </div>
-    </main>
+      </section>
+    </AppShell>
   );
 }

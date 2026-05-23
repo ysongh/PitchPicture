@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HashRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import { ThemeProvider } from './lib/theme';
 import { Home } from './pages/Home';
@@ -14,9 +14,9 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
   if (loading) {
     return (
-      <main className="page">
-        <p>Loading…</p>
-      </main>
+      <div className="pp-fallback">
+        <p className="pp-muted">Loading…</p>
+      </div>
     );
   }
   if (!session) return <Navigate to="/" replace />;
@@ -74,9 +74,12 @@ export default function App() {
           <Route
             path="*"
             element={
-              <main className="page">
-                <p>Not found.</p>
-              </main>
+              <div className="pp-fallback">
+                <h1>Page not found</h1>
+                <Link to="/" className="pp-btn pp-btn--secondary">
+                  Go home
+                </Link>
+              </div>
             }
           />
           </Routes>

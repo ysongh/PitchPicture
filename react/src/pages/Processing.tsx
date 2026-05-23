@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { AppShell } from '../components/AppShell';
 import type { Session } from '../lib/types';
 
 const POLL_MS = 2000;
@@ -81,41 +82,46 @@ export function Processing() {
   const isFailed = status === 'failed';
 
   return (
-    <main className="page">
-      <div className="hero">
+    <AppShell active="home">
+      <div className="pp-status-card pp-card">
         <h1>{isFailed ? 'Something went wrong' : 'Working on it'}</h1>
-        {!isFailed && <p className="tagline">{STATUS_TEXT[status] ?? 'Working…'}</p>}
-      </div>
-      <div className="card">
+
         {!isFailed && (
-          <div className="spinner-row">
-            <div className="spinner" aria-hidden />
-            <span>{status}</span>
-          </div>
+          <>
+            <p className="pp-muted">{STATUS_TEXT[status] ?? 'Working…'}</p>
+            <div className="pp-spinner-row">
+              <span className="pp-spinner" aria-hidden />
+              <span>{status}</span>
+            </div>
+          </>
         )}
+
         {isFailed && (
           <>
             <p className="error">{session?.error_message || 'Unknown error.'}</p>
-            <div className="row">
+            <div className="pp-row pp-row--center">
               <button
                 type="button"
-                className="primary"
+                className="pp-btn pp-btn--primary"
                 onClick={handleRetry}
                 disabled={retrying}
               >
                 {retrying ? 'Retrying…' : 'Retry'}
               </button>
-              <Link to="/record" className="button ghost">
+              <Link to="/record" className="pp-btn pp-btn--secondary">
                 New recording
               </Link>
-              <Link to="/" className="button ghost">
+              <Link to="/" className="pp-btn pp-btn--ghost">
                 Home
               </Link>
             </div>
           </>
         )}
-        {error && !isFailed && <p className="warn">Network hiccup: {error} — retrying.</p>}
+
+        {error && !isFailed && (
+          <p className="warn">Network hiccup: {error} — retrying.</p>
+        )}
       </div>
-    </main>
+    </AppShell>
   );
 }
