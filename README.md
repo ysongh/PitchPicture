@@ -125,6 +125,8 @@ You can pause and resume mid-recording to gather your thoughts — paused time d
 
 From a finished diagram you can **refine** it: record a short follow-up ("add a step between X and Y") and Claude updates the existing diagram instead of starting over. A failed refine is non-destructive — the original diagram stays intact.
 
+You can also **download** the diagram as PNG or SVG to drop into slides or docs — same option is available on the public share page.
+
 ## API
 
 | Method | Path | Auth | Purpose |
@@ -148,7 +150,7 @@ All authenticated routes need `Authorization: Bearer <supabase_jwt>`.
 - Email/password auth (Google OAuth coming)
 - Recordings capped at 30 min
 
-Out of scope for v1: multi-speaker, real-time, diagram editing, team workspaces, integrations, mobile, PNG export.
+Out of scope for v1: multi-speaker, real-time, diagram editing, team workspaces, integrations, mobile.
 
 ## License
 

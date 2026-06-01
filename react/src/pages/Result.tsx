@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { exportDiagram, type ExportFormat } from '../lib/exportDiagram';
 import { DiagramView } from '../components/DiagramView';
 import { AppShell } from '../components/AppShell';
+import { Menu } from '../components/Menu';
 import {
   ArrowLeftIcon,
   CalendarIcon,
+  CaretDownIcon,
   ChevronIcon,
+  DownloadIcon,
   LinkIcon,
   MicIcon,
   SparklesIcon,
@@ -30,6 +34,7 @@ export function Result() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState<ExportFormat | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -45,6 +50,19 @@ export function Result() {
     await navigator.clipboard.writeText(url);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
+  }
+
+  async function doExport(format: ExportFormat) {
+    if (!session) return;
+    setExporting(format);
+    setError(null);
+    try {
+      await exportDiagram(format, session.title);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setExporting(null);
+    }
   }
 
   async function handleDelete() {
@@ -140,6 +158,51 @@ export function Result() {
           <Link to="/record" className="pp-btn pp-btn--secondary">
             <MicIcon /> New recording
           </Link>
+          <Menu
+            align="start"
+            trigger={({ toggle, open }) => (
+              <button
+                type="button"
+                className="pp-btn pp-btn--secondary"
+                onClick={toggle}
+                aria-expanded={open}
+                disabled={!session.mermaid_code || exporting !== null}
+              >
+                <DownloadIcon />{' '}
+                {exporting === 'png'
+                  ? 'Saving PNG…'
+                  : exporting === 'svg'
+                    ? 'Saving SVG…'
+                    : 'Download'}
+                <CaretDownIcon />
+              </button>
+            )}
+          >
+            {(close) => (
+              <>
+                <button
+                  type="button"
+                  className="pp-menu-item"
+                  onClick={() => {
+                    close();
+                    doExport('png');
+                  }}
+                >
+                  <DownloadIcon /> PNG image
+                </button>
+                <button
+                  type="button"
+                  className="pp-menu-item"
+                  onClick={() => {
+                    close();
+                    doExport('svg');
+                  }}
+                >
+                  <DownloadIcon /> SVG vector
+                </button>
+              </>
+            )}
+          </Menu>
           <span className="pp-actions-spacer" />
           <span className="pp-actions-divider" />
           <button

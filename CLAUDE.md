@@ -10,11 +10,11 @@ Web app: user records themselves narrating an idea → audio is transcribed → 
 - Google OAuth via Supabase
 - Recordings capped at 30 min
 
-Out of scope: multi-speaker, real-time, diagram editing, team workspaces, integrations, mobile, PNG export.
+Out of scope: multi-speaker, real-time, diagram editing, team workspaces, integrations, mobile.
 
 ## Stack
 
-- **Frontend** (`react/`): React + TS + Vite, React Router with `HashRouter`. Plain CSS (no Tailwind — spec listed it but it wasn't installed; styles use CSS vars in `react/src/index.css`). Deploys to Netlify.
+- **Frontend** (`react/`): React + TS + Vite, React Router with `HashRouter`. Plain CSS, no Tailwind. Design tokens at `:root` in [react/src/index.css](react/src/index.css); component styles use a `pp-*` class system in [react/src/App.css](react/src/App.css). Deploys to Netlify.
 - **Backend** (`api/`): Node + Express + TS. Deploys to Railway or Fly.
 - **Auth + DB + Storage**: Supabase (Google OAuth, Postgres, private `audio-recordings` bucket)
 - **STT**: Deepgram Nova-3
@@ -167,6 +167,20 @@ To prevent a flash of wrong theme on cold load, [react/index.html](react/index.h
 
 **Mermaid theme is dynamic**: [react/src/components/DiagramView.tsx](react/src/components/DiagramView.tsx) reads `useTheme().resolved` and calls `mermaid.initialize({ theme: 'dark' | 'default' })` inside the render effect, with the resolved theme in the deps array so diagrams re-render when the user toggles. Mermaid's `'default'` theme produces dark text on light shapes; `'dark'` produces light text on dark shapes. Without this, dark mode shows light-on-light unreadable diagrams.
 
+## Design system (pp-* classes)
+
+All signed-in screens wrap content in [react/src/components/AppShell.tsx](react/src/components/AppShell.tsx), which renders a persistent 60px [TopBar](react/src/components/TopBar.tsx) + a centered `<main className="pp-main">`. Public/unauthed screens (signed-out Home, Share, not-found) pass `minimal` to get a brand-only top bar without the nav links or account chip.
+
+Component CSS lives in [react/src/App.css](react/src/App.css) and uses a `pp-*` class prefix. Tokens (colors, spacing scale `--s-1..s-8`, radius, shadow) live at `:root` in [react/src/index.css](react/src/index.css) — add new tokens there. Dark overrides MUST live under `:root[data-theme='dark']`; do NOT use `@media (prefers-color-scheme: dark)` (it ignores the user's theme toggle, see Theme section).
+
+Reusable pieces worth knowing:
+- **[Menu](react/src/components/Menu.tsx)** — popover with outside-click + Escape close. Used for the account chip (Sign out), the History row kebab (Copy share link, Delete), and the Result/Share Download menu. The wrapper stops click propagation so menus work inside clickable rows.
+- **[icons.tsx](react/src/components/icons.tsx)** — shared SVG icons (Mic, Link, Sparkles, Plus, Trash, Kebab, ArrowLeft, Calendar, Caret/Chevron, Download, BrandMark, plus filled `MicGlyph` + `StopGlyph` for the record button). Add new icons here, not inline.
+
+## Diagram export (PNG/SVG)
+
+Result and the public Share page have a Download menu that exports the rendered Mermaid diagram. [react/src/lib/exportDiagram.ts](react/src/lib/exportDiagram.ts) reads the SVG that `DiagramView` mounts into `.pp-canvas .diagram svg`, either serializes it (SVG) or rasterizes it via `<canvas>` at 2× and `canvas.toBlob('image/png')`. PNG background is read from `--bg` so dark-mode exports stay legible against dark nodes. Filename is the slugified session title. No backend involvement.
+
 ## PWA (mobile-web)
 
 Installable as a PWA on iOS Safari and Android Chrome. Files:
@@ -174,7 +188,7 @@ Installable as a PWA on iOS Safari and Android Chrome. Files:
 - [react/public/sw.js](react/public/sw.js) — minimal service worker, no caching; exists only so Chrome's install prompt fires
 - [react/index.html](react/index.html) — manifest link, apple-touch-icon, theme-color, `viewport-fit=cover` for notch safe areas
 - [react/src/main.tsx](react/src/main.tsx) — registers `sw.js` **only in `import.meta.env.PROD`** so dev HMR isn't interfered with
-- [react/src/App.css](react/src/App.css) — `min-height: 44px` on buttons, full-width primary action on `max-width: 540px`, `env(safe-area-inset-*)` padding on `.page`, momentum scroll on `.diagram`
+- [react/src/App.css](react/src/App.css) — `min-height: 44px` on `.pp-btn`, full-width primary action on `max-width: 540px`, `env(safe-area-inset-bottom)` padding on `.pp-main`, momentum scroll on `.diagram`
 
 Limitations to know:
 - Install requires HTTPS — only works against the deployed Netlify URL, not `localhost`.
